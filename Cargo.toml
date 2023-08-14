@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "algorithmify",
+    "algorithmify_macros",
+]
