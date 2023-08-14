@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::{reference::Reference, Expression};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operation {
     Add(Expression, Expression),
     Sub(Expression, Expression),

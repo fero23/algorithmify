@@ -1,6 +1,3 @@
 [workspace]
 
-members = [
-    "algorithmify",
-    "algorithmify_macros",
-]
+members = ["algorithmify", "algorithmify_macros"]

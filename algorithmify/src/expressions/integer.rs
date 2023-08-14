@@ -1,6 +1,6 @@
 use std::ops::{Add, BitAnd, BitOr, Div, Mul, Sub};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Integer {
     I8(i8),
     I16(i16),
@@ -148,5 +148,11 @@ impl BitOr for Integer {
             (Self::Usize(lhs), Self::Usize(rhs)) => Self::Usize(lhs | rhs),
             _ => Self::I64(self.as_i64() | rhs.as_i64()),
         }
+    }
+}
+
+impl From<i32> for Integer {
+    fn from(value: i32) -> Self {
+        Integer::I32(value)
     }
 }

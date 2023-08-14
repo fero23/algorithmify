@@ -2,7 +2,10 @@ use std::collections::HashSet;
 
 use crate::interpreter::context::Context;
 
-use self::{float::Float, integer::Integer, operation::Operation, reference::Reference};
+pub use self::{
+    float::Float, functions::Function, integer::Integer, operation::Operation,
+    reference::Reference, statements::Statement,
+};
 use anyhow::anyhow;
 
 pub mod float;
@@ -12,7 +15,7 @@ pub mod operation;
 pub mod reference;
 pub mod statements;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Unit,
     Vector(Vec<Expression>),

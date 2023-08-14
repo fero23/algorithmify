@@ -11,6 +11,13 @@ pub struct Function {
 }
 
 impl Function {
+    pub fn new(statements: Vec<Statement>, return_expression: Expression) -> Self {
+        Self {
+            statements,
+            return_expression,
+        }
+    }
+
     pub fn execute(&self, context: &mut Context) -> anyhow::Result<Expression> {
         for statement in &self.statements {
             statement.execute(context)?;

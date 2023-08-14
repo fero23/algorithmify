@@ -9,6 +9,12 @@ pub struct Context {
 }
 
 impl Context {
+    pub(crate) fn new() -> Self {
+        Self {
+            heap: HashMap::new(),
+        }
+    }
+
     pub(crate) fn search_reference(&self, reference: &Reference) -> Option<&Expression> {
         match reference {
             Reference::Variable(variable) => self.heap.get(variable),

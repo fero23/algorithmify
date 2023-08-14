@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.72"
+algorithmify_macros = { path = "../algorithmify_macros" }
