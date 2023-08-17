@@ -15,12 +15,12 @@ pub enum Operation {
 impl Operation {
     pub fn execute(&self) -> anyhow::Result<Expression> {
         Ok(match self {
-            Self::Add(lhs, rhs) => lhs.add(rhs)?,
-            Self::Sub(lhs, rhs) => lhs.sub(rhs)?,
-            Self::Mul(lhs, rhs) => lhs.mul(rhs)?,
-            Self::Div(lhs, rhs) => lhs.div(rhs)?,
-            Self::BitAnd(lhs, rhs) => lhs.bitand(rhs)?,
-            Self::BitOr(lhs, rhs) => lhs.bitor(rhs)?,
+            Self::Add(lhs, rhs) => lhs.try_resolve_inner().add(rhs.try_resolve_inner())?,
+            Self::Sub(lhs, rhs) => lhs.try_resolve_inner().sub(rhs.try_resolve_inner())?,
+            Self::Mul(lhs, rhs) => lhs.try_resolve_inner().mul(rhs.try_resolve_inner())?,
+            Self::Div(lhs, rhs) => lhs.try_resolve_inner().div(rhs.try_resolve_inner())?,
+            Self::BitAnd(lhs, rhs) => lhs.try_resolve_inner().bitand(rhs.try_resolve_inner())?,
+            Self::BitOr(lhs, rhs) => lhs.try_resolve_inner().bitor(rhs.try_resolve_inner())?,
         })
     }
 

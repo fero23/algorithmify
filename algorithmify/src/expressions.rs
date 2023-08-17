@@ -79,12 +79,22 @@ impl Expression {
         }
     }
 
-    fn add(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+    fn try_resolve_inner(&self) -> Expression {
+        if let Expression::Operation(operation) = self {
+            if let Ok(resolution) = operation.execute() {
+                return resolution;
+            }
+        }
+
+        self.clone()
+    }
+
+    fn add(self, rhs: Expression) -> anyhow::Result<Expression> {
         match (self, rhs) {
             (Expression::Integer(lhs), Expression::Integer(rhs)) => {
-                Ok(Expression::Integer(*lhs + *rhs))
+                Ok(Expression::Integer(lhs + rhs))
             }
-            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(*lhs + *rhs)),
+            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(lhs + rhs)),
             (Expression::String(lhs), Expression::String(rhs)) => {
                 Ok(Expression::String(lhs.clone() + &rhs))
             }
@@ -94,77 +104,77 @@ impl Expression {
             (Expression::Char(lhs), Expression::String(rhs)) => {
                 Ok(Expression::String(lhs.to_string() + &rhs))
             }
-            _ => Err(anyhow!(
+            (lhs, rhs) => Err(anyhow!(
                 "Unsupported addition bewtween {:?} and {:?}",
-                self,
+                lhs,
                 rhs
             )),
         }
     }
 
-    fn sub(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+    fn sub(self, rhs: Expression) -> anyhow::Result<Expression> {
         match (self, rhs) {
             (Expression::Integer(lhs), Expression::Integer(rhs)) => {
-                Ok(Expression::Integer(*lhs - *rhs))
+                Ok(Expression::Integer(lhs - rhs))
             }
-            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(*lhs - *rhs)),
-            _ => Err(anyhow!(
+            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(lhs - rhs)),
+            (lhs, rhs) => Err(anyhow!(
                 "Unsupported substraction bewtween {:?} and {:?}",
-                self,
+                lhs,
                 rhs
             )),
         }
     }
 
-    fn mul(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+    fn mul(self, rhs: Expression) -> anyhow::Result<Expression> {
         match (self, rhs) {
             (Expression::Integer(lhs), Expression::Integer(rhs)) => {
-                Ok(Expression::Integer(*lhs * *rhs))
+                Ok(Expression::Integer(lhs * rhs))
             }
-            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(*lhs * *rhs)),
-            _ => Err(anyhow!(
+            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(lhs * rhs)),
+            (lhs, rhs) => Err(anyhow!(
                 "Unsupported multiplication bewtween {:?} and {:?}",
-                self,
+                lhs,
                 rhs
             )),
         }
     }
 
-    fn div(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+    fn div(self, rhs: Expression) -> anyhow::Result<Expression> {
         match (self, rhs) {
             (Expression::Integer(lhs), Expression::Integer(rhs)) => {
-                Ok(Expression::Integer(*lhs / *rhs))
+                Ok(Expression::Integer(lhs / rhs))
             }
-            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(*lhs / *rhs)),
-            _ => Err(anyhow!(
+            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(lhs / rhs)),
+            (lhs, rhs) => Err(anyhow!(
                 "Unsupported division bewtween {:?} and {:?}",
-                self,
+                lhs,
                 rhs
             )),
         }
     }
 
-    fn bitand(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+    fn bitand(self, rhs: Expression) -> anyhow::Result<Expression> {
         match (self, rhs) {
             (Expression::Integer(lhs), Expression::Integer(rhs)) => {
-                Ok(Expression::Integer(*lhs & *rhs))
+                Ok(Expression::Integer(lhs & rhs))
             }
-            _ => Err(anyhow!(
+            (lhs, rhs) => Err(anyhow!(
                 "Unsupported bitwise AND bewtween {:?} and {:?}",
-                self,
+                lhs,
                 rhs
             )),
         }
     }
 
-    fn bitor(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+    fn bitor(self, rhs: Expression) -> anyhow::Result<Expression> {
         match (self, rhs) {
             (Expression::Integer(lhs), Expression::Integer(rhs)) => {
-                Ok(Expression::Integer(*lhs | *rhs))
+                Ok(Expression::Integer(lhs | rhs))
             }
-            _ => Err(anyhow!(
+            (lhs, rhs) => Err(anyhow!(
                 "Unsupported bitwise OR bewtween {:?} and {:?}",
-                self,
+                lhs,
                 rhs
             )),
         }

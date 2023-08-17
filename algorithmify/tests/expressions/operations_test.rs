@@ -60,3 +60,19 @@ fn division_test() {
     assert_eq!(division(), 3);
     assert_eq!(context, Expression::Integer(3.into()));
 }
+
+#[test]
+fn parametherized_expression_test() {
+    #[define_function_builder]
+    fn parametherized_expression() -> i32 {
+        let mut a = 6;
+        a = 3 + ((a / 2) * 2) + 3;
+        a
+    }
+
+    let context =
+        Interpreter::execute_function(parametherized_expression__function_builder()).unwrap();
+
+    assert_eq!(parametherized_expression(), 12);
+    assert_eq!(context, Expression::Integer(12.into()));
+}

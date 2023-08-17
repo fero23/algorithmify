@@ -1,3 +1,5 @@
+use std::iter::Peekable;
+
 use proc_macro::{Delimiter, TokenStream, TokenTree};
 
 #[derive(Default, Debug)]
@@ -6,6 +8,8 @@ struct FunctionParams {
     function_statements: Option<String>,
     function_return_expression: Option<String>,
 }
+
+type TokenPeekable = Peekable<std::vec::IntoIter<TokenTree>>;
 
 pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
     let trees = stream.clone().into_iter().collect::<Vec<_>>();
@@ -59,14 +63,14 @@ fn map_function_body(params: &mut FunctionParams, body: &proc_macro::Group) {
         .collect::<Vec<&[_]>>();
 
     for instruction in &instructions[..instructions.len() - 1] {
-        map_instructions(params, instruction);
+        map_statements(params, instruction);
     }
 
-    let result = map_expression(instructions[instructions.len() - 1]);
+    let result = map_expression(slice_into_peekable(&instructions[instructions.len() - 1]));
     params.function_return_expression = Some(result);
 }
 
-fn map_instructions(params: &mut FunctionParams, instruction: &[TokenTree]) {
+fn map_statements(params: &mut FunctionParams, instruction: &[TokenTree]) {
     let result = [try_map_assignment]
         .iter()
         .map(|f| f(params, instruction))
@@ -89,7 +93,7 @@ fn try_map_assignment(params: &mut FunctionParams, instruction: &[TokenTree]) ->
     {
         if let TokenTree::Ident(ident) = &instruction[index - 1] {
             let identifier = map_reference(ident);
-            let expression = map_expression(&instruction[index + 1..]);
+            let expression = map_expression(slice_into_peekable(&instruction[index + 1..]));
 
             *params.function_statements.as_mut().unwrap() += &format!(
                 "algorithmify::expressions::Statement::Assignment({}, {}),",
@@ -103,23 +107,34 @@ fn try_map_assignment(params: &mut FunctionParams, instruction: &[TokenTree]) ->
     false
 }
 
-fn map_expression(expression: &[TokenTree]) -> String {
-    let mut iterator = expression.iter();
-    let mut value = map_value(iterator.next().expect("Cannot map empty expression"));
+#[inline]
+fn slice_into_peekable(iterable: &[TokenTree]) -> TokenPeekable {
+    into_peekable(iterable.iter().cloned().collect())
+}
+
+#[inline]
+fn into_peekable(iterable: Vec<TokenTree>) -> TokenPeekable {
+    iterable.into_iter().peekable()
+}
+
+fn map_expression(mut iterator: TokenPeekable) -> String {
+    let token = iterator.next().expect("Cannot map empty expression");
+
+    let mut expression = map_value(token);
 
     while let Some(tree) = iterator.next() {
-        value = match &tree.to_string()[..] {
-            "+" => map_addition(value, map_value(iterator.next().unwrap())),
-            "-" => map_substraction(value, map_value(iterator.next().unwrap())),
-            "*" => map_multiplication(value, map_value(iterator.next().unwrap())),
-            "/" => map_division(value, map_value(iterator.next().unwrap())),
-            "&" => map_bitwise_and(value, map_value(iterator.next().unwrap())),
-            "|" => map_bitwise_or(value, map_value(iterator.next().unwrap())),
+        expression = match &tree.to_string()[..] {
+            "+" => map_addition(expression, map_value(iterator.next().unwrap())),
+            "-" => map_substraction(expression, map_value(iterator.next().unwrap())),
+            "*" => map_multiplication(expression, map_value(iterator.next().unwrap())),
+            "/" => map_division(expression, map_value(iterator.next().unwrap())),
+            "&" => map_bitwise_and(expression, map_value(iterator.next().unwrap())),
+            "|" => map_bitwise_or(expression, map_value(iterator.next().unwrap())),
             _ => panic!("Unknown operation '{}'", tree),
         }
     }
 
-    value
+    expression
 }
 
 fn map_addition(lhs: String, rhs: String) -> String {
@@ -146,17 +161,21 @@ fn map_bitwise_or(lhs: String, rhs: String) -> String {
     format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::BitOr({}, {})))", lhs, rhs)
 }
 
-fn map_value(tree: &TokenTree) -> String {
+fn map_value(tree: TokenTree) -> String {
     match tree {
         TokenTree::Ident(variable) => map_reference_expression(variable),
         TokenTree::Literal(literal) if literal.to_string().parse::<i32>().is_ok() => {
             map_integer(literal)
         }
+        TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
+            let children = group.stream().into_iter().collect();
+            map_expression(into_peekable(children))
+        }
         _ => panic!("Unrecognized value '{}'", tree),
     }
 }
 
-fn map_integer(literal: &proc_macro::Literal) -> String {
+fn map_integer(literal: proc_macro::Literal) -> String {
     let number = literal.to_string().parse::<i32>().unwrap();
     format!(
         "algorithmify::expressions::Expression::Integer(algorithmify::expressions::Integer::I32({}))",
@@ -164,10 +183,10 @@ fn map_integer(literal: &proc_macro::Literal) -> String {
     )
 }
 
-fn map_reference_expression(reference: &proc_macro::Ident) -> String {
+fn map_reference_expression(reference: proc_macro::Ident) -> String {
     format!(
         "algorithmify::expressions::Expression::Reference({})",
-        map_reference(reference),
+        map_reference(&reference),
     )
 }
 
