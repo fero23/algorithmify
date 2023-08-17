@@ -110,6 +110,11 @@ fn map_expression(expression: &[TokenTree]) -> String {
     while let Some(tree) = iterator.next() {
         value = match &tree.to_string()[..] {
             "+" => map_addition(value, map_value(iterator.next().unwrap())),
+            "-" => map_substraction(value, map_value(iterator.next().unwrap())),
+            "*" => map_multiplication(value, map_value(iterator.next().unwrap())),
+            "/" => map_division(value, map_value(iterator.next().unwrap())),
+            "&" => map_bitwise_and(value, map_value(iterator.next().unwrap())),
+            "|" => map_bitwise_or(value, map_value(iterator.next().unwrap())),
             _ => panic!("Unknown operation '{}'", tree),
         }
     }
@@ -119,6 +124,26 @@ fn map_expression(expression: &[TokenTree]) -> String {
 
 fn map_addition(lhs: String, rhs: String) -> String {
     format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Add({}, {})))", lhs, rhs)
+}
+
+fn map_substraction(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Sub({}, {})))", lhs, rhs)
+}
+
+fn map_multiplication(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Mul({}, {})))", lhs, rhs)
+}
+
+fn map_division(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Div({}, {})))", lhs, rhs)
+}
+
+fn map_bitwise_and(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::BitAnd({}, {})))", lhs, rhs)
+}
+
+fn map_bitwise_or(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::BitOr({}, {})))", lhs, rhs)
 }
 
 fn map_value(tree: &TokenTree) -> String {
