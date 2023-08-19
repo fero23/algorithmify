@@ -1,5 +1,3 @@
-use std::iter::Peekable;
-
 use proc_macro::{Delimiter, TokenStream, TokenTree};
 
 #[derive(Default, Debug)]
@@ -9,7 +7,38 @@ struct FunctionParams {
     function_return_expression: Option<String>,
 }
 
-type TokenPeekable = Peekable<std::vec::IntoIter<TokenTree>>;
+struct TokenIterator {
+    tokens: Vec<TokenTree>,
+    index: usize,
+}
+
+impl<T> From<T> for TokenIterator
+where
+    T: Iterator<Item = TokenTree>,
+{
+    fn from(value: T) -> Self {
+        TokenIterator {
+            tokens: value.collect(),
+            index: 0,
+        }
+    }
+}
+
+impl TokenIterator {
+    fn rewind_to(&mut self, index: usize) {
+        self.index = index;
+    }
+
+    fn next(&mut self) -> Option<&TokenTree> {
+        if self.index == self.tokens.len() {
+            None
+        } else {
+            let next = Some(&self.tokens[self.index]);
+            self.index += 1;
+            next
+        }
+    }
+}
 
 pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
     let trees = stream.clone().into_iter().collect::<Vec<_>>();
@@ -66,7 +95,7 @@ fn map_function_body(params: &mut FunctionParams, body: &proc_macro::Group) {
         map_statements(params, instruction);
     }
 
-    let result = map_expression(slice_into_peekable(&instructions[instructions.len() - 1]));
+    let result = map_expression(instructions[instructions.len() - 1].iter().cloned().into());
     params.function_return_expression = Some(result);
 }
 
@@ -93,7 +122,7 @@ fn try_map_assignment(params: &mut FunctionParams, instruction: &[TokenTree]) ->
     {
         if let TokenTree::Ident(ident) = &instruction[index - 1] {
             let identifier = map_reference(ident);
-            let expression = map_expression(slice_into_peekable(&instruction[index + 1..]));
+            let expression = map_expression(instruction[index + 1..].iter().cloned().into());
 
             *params.function_statements.as_mut().unwrap() += &format!(
                 "algorithmify::expressions::Statement::Assignment({}, {}),",
@@ -107,34 +136,76 @@ fn try_map_assignment(params: &mut FunctionParams, instruction: &[TokenTree]) ->
     false
 }
 
-#[inline]
-fn slice_into_peekable(iterable: &[TokenTree]) -> TokenPeekable {
-    into_peekable(iterable.iter().cloned().collect())
-}
+fn map_first_tier_precedence_expression(iterator: &mut TokenIterator) -> Option<String> {
+    let mut index = iterator.index;
+    let token = iterator.next()?;
 
-#[inline]
-fn into_peekable(iterable: Vec<TokenTree>) -> TokenPeekable {
-    iterable.into_iter().peekable()
-}
+    if let Some(mut lhs) = map_value(token) {
+        index = iterator.index;
 
-fn map_expression(mut iterator: TokenPeekable) -> String {
-    let token = iterator.next().expect("Cannot map empty expression");
+        while let Some(operator) = iterator.next().map(|t| t.to_string()) {
+            let token = iterator.next()?;
+            let rhs = map_value(token);
 
-    let mut expression = map_value(token);
+            if let Some(rhs) = rhs {
+                lhs = match &*operator {
+                    "*" => map_multiplication(lhs, rhs),
+                    "/" => map_division(lhs, rhs),
+                    "&" => map_bitwise_and(lhs, rhs),
+                    "|" => map_bitwise_or(lhs, rhs),
+                    _ => break,
+                };
 
-    while let Some(tree) = iterator.next() {
-        expression = match &tree.to_string()[..] {
-            "+" => map_addition(expression, map_value(iterator.next().unwrap())),
-            "-" => map_substraction(expression, map_value(iterator.next().unwrap())),
-            "*" => map_multiplication(expression, map_value(iterator.next().unwrap())),
-            "/" => map_division(expression, map_value(iterator.next().unwrap())),
-            "&" => map_bitwise_and(expression, map_value(iterator.next().unwrap())),
-            "|" => map_bitwise_or(expression, map_value(iterator.next().unwrap())),
-            _ => panic!("Unknown operation '{}'", tree),
+                index = iterator.index;
+            }
         }
+
+        iterator.rewind_to(index);
+        return Some(lhs);
     }
 
-    expression
+    iterator.rewind_to(index);
+    None
+}
+
+fn map_second_tier_preference_expression(iterator: &mut TokenIterator) -> Option<String> {
+    let mut index = iterator.index;
+
+    if let Some(mut lhs) = map_first_tier_precedence_expression(iterator) {
+        index = iterator.index;
+
+        while let Some(operator) = iterator.next().map(|t| t.to_string()) {
+            let rhs = map_first_tier_precedence_expression(iterator);
+            if let Some(rhs) = rhs {
+                lhs = match &*operator {
+                    "+" => map_addition(lhs, rhs),
+                    "-" => map_substraction(lhs, rhs),
+                    _ => break,
+                };
+
+                index = iterator.index;
+            }
+        }
+
+        iterator.rewind_to(index);
+        return Some(lhs);
+    }
+
+    iterator.rewind_to(index);
+    None
+}
+
+fn map_expression(mut iterator: TokenIterator) -> String {
+    let result = map_second_tier_preference_expression(&mut iterator);
+
+    if let Some(result) = result {
+        result
+    } else {
+        panic!(
+            "Unknown token '{}'",
+            iterator.next().expect("Unexpected end of input")
+        )
+    }
 }
 
 fn map_addition(lhs: String, rhs: String) -> String {
@@ -161,21 +232,21 @@ fn map_bitwise_or(lhs: String, rhs: String) -> String {
     format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::BitOr({}, {})))", lhs, rhs)
 }
 
-fn map_value(tree: TokenTree) -> String {
+fn map_value(tree: &TokenTree) -> Option<String> {
     match tree {
-        TokenTree::Ident(variable) => map_reference_expression(variable),
+        TokenTree::Ident(variable) => Some(map_reference_expression(variable)),
         TokenTree::Literal(literal) if literal.to_string().parse::<i32>().is_ok() => {
-            map_integer(literal)
+            Some(map_integer(literal))
         }
         TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
-            let children = group.stream().into_iter().collect();
-            map_expression(into_peekable(children))
+            let children = group.stream().into_iter().collect::<Vec<_>>();
+            Some(map_expression(children.into_iter().into()))
         }
-        _ => panic!("Unrecognized value '{}'", tree),
+        _ => None,
     }
 }
 
-fn map_integer(literal: proc_macro::Literal) -> String {
+fn map_integer(literal: &proc_macro::Literal) -> String {
     let number = literal.to_string().parse::<i32>().unwrap();
     format!(
         "algorithmify::expressions::Expression::Integer(algorithmify::expressions::Integer::I32({}))",
@@ -183,7 +254,7 @@ fn map_integer(literal: proc_macro::Literal) -> String {
     )
 }
 
-fn map_reference_expression(reference: proc_macro::Ident) -> String {
+fn map_reference_expression(reference: &proc_macro::Ident) -> String {
     format!(
         "algorithmify::expressions::Expression::Reference({})",
         map_reference(&reference),

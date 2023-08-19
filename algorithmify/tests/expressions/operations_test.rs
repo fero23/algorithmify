@@ -76,3 +76,18 @@ fn parametherized_expression_test() {
     assert_eq!(parametherized_expression(), 12);
     assert_eq!(context, Expression::Integer(12.into()));
 }
+
+#[test]
+fn operator_precedence_test() {
+    #[define_function_builder]
+    fn operator_precedence() -> i32 {
+        let mut a = 6;
+        a = 3 + a / 2 * 2 + 3;
+        a
+    }
+
+    let context = Interpreter::execute_function(operator_precedence__function_builder()).unwrap();
+
+    assert_eq!(operator_precedence(), 12);
+    assert_eq!(context, Expression::Integer(12.into()));
+}
