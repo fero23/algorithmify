@@ -1,6 +1,6 @@
 use std::ops::{Add, BitAnd, BitOr, Div, Mul, Sub};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub enum Integer {
     I8(i8),
     I16(i16),

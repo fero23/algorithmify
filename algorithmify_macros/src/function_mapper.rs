@@ -7,6 +7,7 @@ struct FunctionParams {
     function_return_expression: Option<String>,
 }
 
+#[derive(Debug)]
 struct TokenIterator {
     tokens: Vec<TokenTree>,
     index: usize,
@@ -36,6 +37,18 @@ impl TokenIterator {
             let next = Some(&self.tokens[self.index]);
             self.index += 1;
             next
+        }
+    }
+
+    fn next_nth_string(&mut self, count: usize) -> Option<String> {
+        if self.index + count >= self.tokens.len() {
+            None
+        } else {
+            let result = (self.index..self.index + count).fold(String::new(), |acc, index| {
+                acc + &self.tokens[index].to_string()
+            });
+            self.index += count;
+            Some(result)
         }
     }
 }
@@ -157,6 +170,8 @@ fn map_first_tier_precedence_expression(iterator: &mut TokenIterator) -> Option<
                 };
 
                 index = iterator.index;
+            } else {
+                break;
             }
         }
 
@@ -168,7 +183,7 @@ fn map_first_tier_precedence_expression(iterator: &mut TokenIterator) -> Option<
     None
 }
 
-fn map_second_tier_preference_expression(iterator: &mut TokenIterator) -> Option<String> {
+fn map_second_tier_precedence_expression(iterator: &mut TokenIterator) -> Option<String> {
     let mut index = iterator.index;
 
     if let Some(mut lhs) = map_first_tier_precedence_expression(iterator) {
@@ -180,6 +195,83 @@ fn map_second_tier_preference_expression(iterator: &mut TokenIterator) -> Option
                 lhs = match &*operator {
                     "+" => map_addition(lhs, rhs),
                     "-" => map_substraction(lhs, rhs),
+                    _ => break,
+                };
+
+                index = iterator.index;
+            } else {
+                break;
+            }
+        }
+
+        iterator.rewind_to(index);
+        return Some(lhs);
+    }
+
+    iterator.rewind_to(index);
+    None
+}
+
+fn map_third_tier_precedence_expression(iterator: &mut TokenIterator) -> Option<String> {
+    let mut index = iterator.index;
+
+    if let Some(mut lhs) = map_second_tier_precedence_expression(iterator) {
+        index = iterator.index;
+
+        while let Some(operator) = iterator.next_nth_string(2) {
+            let rhs = map_second_tier_precedence_expression(iterator);
+            if let Some(rhs) = rhs {
+                lhs = match &*operator {
+                    "==" => map_eq(lhs, rhs),
+                    "!=" => map_ne(lhs, rhs),
+                    ">=" => map_gte(lhs, rhs),
+                    "<=" => map_lte(lhs, rhs),
+                    _ => break,
+                };
+
+                index = iterator.index;
+            } else {
+                break;
+            }
+        }
+
+        iterator.rewind_to(index);
+
+        while let Some(operator) = iterator.next().map(|t| t.to_string()) {
+            let rhs = map_third_tier_precedence_expression(iterator);
+            if let Some(rhs) = rhs {
+                lhs = match &*operator {
+                    ">" => map_gt(lhs, rhs),
+                    "<" => map_lt(lhs, rhs),
+                    _ => break,
+                };
+
+                index = iterator.index;
+            } else {
+                break;
+            }
+        }
+
+        iterator.rewind_to(index);
+        return Some(lhs);
+    }
+
+    iterator.rewind_to(index);
+    None
+}
+
+fn map_fourth_tier_precedence_expression(iterator: &mut TokenIterator) -> Option<String> {
+    let mut index = iterator.index;
+
+    if let Some(mut lhs) = map_third_tier_precedence_expression(iterator) {
+        index = iterator.index;
+
+        while let Some(operator) = iterator.next_nth_string(2) {
+            let rhs = map_third_tier_precedence_expression(iterator);
+            if let Some(rhs) = rhs {
+                lhs = match &*operator {
+                    "&&" => map_logical_and(lhs, rhs),
+                    "||" => map_logical_or(lhs, rhs),
                     _ => break,
                 };
 
@@ -196,7 +288,7 @@ fn map_second_tier_preference_expression(iterator: &mut TokenIterator) -> Option
 }
 
 fn map_expression(mut iterator: TokenIterator) -> String {
-    let result = map_second_tier_preference_expression(&mut iterator);
+    let result = map_fourth_tier_precedence_expression(&mut iterator);
 
     if let Some(result) = result {
         result
@@ -232,6 +324,38 @@ fn map_bitwise_or(lhs: String, rhs: String) -> String {
     format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::BitOr({}, {})))", lhs, rhs)
 }
 
+fn map_logical_and(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::And({}, {})))", lhs, rhs)
+}
+
+fn map_logical_or(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Or({}, {})))", lhs, rhs)
+}
+
+fn map_eq(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Eq({}, {})))", lhs, rhs)
+}
+
+fn map_ne(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Ne({}, {})))", lhs, rhs)
+}
+
+fn map_lt(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Lt({}, {})))", lhs, rhs)
+}
+
+fn map_lte(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Lte({}, {})))", lhs, rhs)
+}
+
+fn map_gt(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Gt({}, {})))", lhs, rhs)
+}
+
+fn map_gte(lhs: String, rhs: String) -> String {
+    format!("algorithmify::expressions::Expression::Operation(Box::new(algorithmify::expressions::Operation::Gte({}, {})))", lhs, rhs)
+}
+
 fn map_value(tree: &TokenTree) -> Option<String> {
     match tree {
         TokenTree::Ident(variable) => Some(map_reference_expression(variable)),
@@ -255,10 +379,14 @@ fn map_integer(literal: &proc_macro::Literal) -> String {
 }
 
 fn map_reference_expression(reference: &proc_macro::Ident) -> String {
-    format!(
-        "algorithmify::expressions::Expression::Reference({})",
-        map_reference(&reference),
-    )
+    match &*reference.to_string() {
+        "true" => "algorithmify::expressions::Expression::Bool(true)".to_owned(),
+        "false" => "algorithmify::expressions::Expression::Bool(false)".to_owned(),
+        _ => format!(
+            "algorithmify::expressions::Expression::Reference({})",
+            map_reference(&reference),
+        ),
+    }
 }
 
 fn map_reference(reference: &proc_macro::Ident) -> String {

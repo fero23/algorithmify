@@ -10,10 +10,10 @@ fn addition_test() {
         a
     }
 
-    let context = Interpreter::execute_function(addition__function_builder()).unwrap();
+    let expression = Interpreter::execute_function(addition__function_builder()).unwrap();
 
     assert_eq!(addition(), 3);
-    assert_eq!(context, Expression::Integer(3.into()));
+    assert_eq!(expression, Expression::Integer(3.into()));
 }
 
 #[test]
@@ -25,10 +25,10 @@ fn substraction_test() {
         a
     }
 
-    let context = Interpreter::execute_function(substraction__function_builder()).unwrap();
+    let expression = Interpreter::execute_function(substraction__function_builder()).unwrap();
 
     assert_eq!(substraction(), 4);
-    assert_eq!(context, Expression::Integer(4.into()));
+    assert_eq!(expression, Expression::Integer(4.into()));
 }
 
 #[test]
@@ -40,10 +40,10 @@ fn multiplication_test() {
         a
     }
 
-    let context = Interpreter::execute_function(multiplication__function_builder()).unwrap();
+    let expression = Interpreter::execute_function(multiplication__function_builder()).unwrap();
 
     assert_eq!(multiplication(), 6);
-    assert_eq!(context, Expression::Integer(6.into()));
+    assert_eq!(expression, Expression::Integer(6.into()));
 }
 
 #[test]
@@ -55,10 +55,10 @@ fn division_test() {
         a
     }
 
-    let context = Interpreter::execute_function(division__function_builder()).unwrap();
+    let expression = Interpreter::execute_function(division__function_builder()).unwrap();
 
     assert_eq!(division(), 3);
-    assert_eq!(context, Expression::Integer(3.into()));
+    assert_eq!(expression, Expression::Integer(3.into()));
 }
 
 #[test]
@@ -70,11 +70,11 @@ fn parametherized_expression_test() {
         a
     }
 
-    let context =
+    let expression =
         Interpreter::execute_function(parametherized_expression__function_builder()).unwrap();
 
     assert_eq!(parametherized_expression(), 12);
-    assert_eq!(context, Expression::Integer(12.into()));
+    assert_eq!(expression, Expression::Integer(12.into()));
 }
 
 #[test]
@@ -86,8 +86,43 @@ fn operator_precedence_test() {
         a
     }
 
-    let context = Interpreter::execute_function(operator_precedence__function_builder()).unwrap();
+    let expression =
+        Interpreter::execute_function(operator_precedence__function_builder()).unwrap();
 
     assert_eq!(operator_precedence(), 12);
-    assert_eq!(context, Expression::Integer(12.into()));
+    assert_eq!(expression, Expression::Integer(12.into()));
+}
+
+#[test]
+fn boolean_logic_test() {
+    #[define_function_builder]
+    fn boolean_logic_true() -> bool {
+        let a = 6;
+        let eq = a == 6;
+        let ne = a != 5;
+        let cmp = 23 > 6 && 11 < 23 && 5 <= 6 && 5 >= 3;
+
+        (eq && ne && cmp) || false
+    }
+
+    let expression = Interpreter::execute_function(boolean_logic_true__function_builder()).unwrap();
+
+    assert_eq!(boolean_logic_true(), true);
+    assert_eq!(expression, Expression::Bool(true));
+
+    #[define_function_builder]
+    fn boolean_logic_false() -> bool {
+        let a = 6;
+        let eq = a == 6;
+        let ne = a != 6;
+        let cmp = 23 > 6 && 11 < 23 && 5 <= 6 && 5 >= 3;
+
+        (eq && ne && cmp) || false
+    }
+
+    let expression =
+        Interpreter::execute_function(boolean_logic_false__function_builder()).unwrap();
+
+    assert_eq!(boolean_logic_false(), false);
+    assert_eq!(expression, Expression::Bool(false));
 }

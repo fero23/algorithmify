@@ -24,6 +24,7 @@ pub enum Expression {
     Float(Float),
     Char(char),
     String(String),
+    Bool(bool),
     Operation(Box<Operation>),
 }
 
@@ -89,6 +90,13 @@ impl Expression {
         self.clone()
     }
 
+    fn as_boolean(&self) -> Option<bool> {
+        match self {
+            Self::Bool(bool) => Some(*bool),
+            _ => None,
+        }
+    }
+
     fn add(self, rhs: Expression) -> anyhow::Result<Expression> {
         match (self, rhs) {
             (Expression::Integer(lhs), Expression::Integer(rhs)) => {
@@ -105,7 +113,7 @@ impl Expression {
                 Ok(Expression::String(lhs.to_string() + &rhs))
             }
             (lhs, rhs) => Err(anyhow!(
-                "Unsupported addition bewtween {:?} and {:?}",
+                "Unsupported addition between {:?} and {:?}",
                 lhs,
                 rhs
             )),
@@ -119,7 +127,7 @@ impl Expression {
             }
             (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(lhs - rhs)),
             (lhs, rhs) => Err(anyhow!(
-                "Unsupported substraction bewtween {:?} and {:?}",
+                "Unsupported substraction between {:?} and {:?}",
                 lhs,
                 rhs
             )),
@@ -133,7 +141,7 @@ impl Expression {
             }
             (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(lhs * rhs)),
             (lhs, rhs) => Err(anyhow!(
-                "Unsupported multiplication bewtween {:?} and {:?}",
+                "Unsupported multiplication between {:?} and {:?}",
                 lhs,
                 rhs
             )),
@@ -147,7 +155,7 @@ impl Expression {
             }
             (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Float(lhs / rhs)),
             (lhs, rhs) => Err(anyhow!(
-                "Unsupported division bewtween {:?} and {:?}",
+                "Unsupported division between {:?} and {:?}",
                 lhs,
                 rhs
             )),
@@ -160,7 +168,7 @@ impl Expression {
                 Ok(Expression::Integer(lhs & rhs))
             }
             (lhs, rhs) => Err(anyhow!(
-                "Unsupported bitwise AND bewtween {:?} and {:?}",
+                "Unsupported bitwise AND between {:?} and {:?}",
                 lhs,
                 rhs
             )),
@@ -173,10 +181,86 @@ impl Expression {
                 Ok(Expression::Integer(lhs | rhs))
             }
             (lhs, rhs) => Err(anyhow!(
-                "Unsupported bitwise OR bewtween {:?} and {:?}",
+                "Unsupported bitwise OR between {:?} and {:?}",
                 lhs,
                 rhs
             )),
         }
+    }
+
+    fn and(self, rhs: Expression) -> anyhow::Result<Expression> {
+        match (self, rhs) {
+            (Expression::Bool(lhs), Expression::Bool(rhs)) => Ok(Expression::Bool(lhs && rhs)),
+            (lhs, rhs) => Err(anyhow!("Unsupported AND between {:?} and {:?}", lhs, rhs)),
+        }
+    }
+
+    fn or(self, rhs: Expression) -> anyhow::Result<Expression> {
+        match (self, rhs) {
+            (Expression::Bool(lhs), Expression::Bool(rhs)) => Ok(Expression::Bool(lhs || rhs)),
+            (lhs, rhs) => Err(anyhow!("Unsupported OR between {:?} and {:?}", lhs, rhs)),
+        }
+    }
+
+    fn eq(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+        match (self, rhs) {
+            (Expression::Integer(lhs), Expression::Integer(rhs)) => {
+                Ok(Expression::Bool(*lhs == *rhs))
+            }
+            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Bool(*lhs == *rhs)),
+            (Expression::Bool(lhs), Expression::Bool(rhs)) => Ok(Expression::Bool(*lhs == *rhs)),
+            (lhs, rhs) => Err(anyhow!(
+                "Unsupported equals between {:?} and {:?}",
+                lhs,
+                rhs
+            )),
+        }
+    }
+
+    fn ne(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+        self.eq(rhs)
+            .map(|result| Expression::Bool(!result.as_boolean().unwrap()))
+            .map_err(|_| anyhow!("Unsupported not equals between {:?} and {:?}", self, rhs))
+    }
+
+    fn lt(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+        match (self, rhs) {
+            (Expression::Integer(lhs), Expression::Integer(rhs)) => {
+                Ok(Expression::Bool(*lhs < *rhs))
+            }
+            (Expression::Float(lhs), Expression::Float(rhs)) => Ok(Expression::Bool(*lhs < *rhs)),
+            (Expression::Bool(lhs), Expression::Bool(rhs)) => Ok(Expression::Bool(*lhs < *rhs)),
+            (lhs, rhs) => Err(anyhow!(
+                "Unsupported less than between {:?} and {:?}",
+                lhs,
+                rhs
+            )),
+        }
+    }
+
+    fn lte(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+        self.eq(rhs)
+            .and_then(|eq| {
+                self.lt(rhs).map(|lt| {
+                    Expression::Bool(eq.as_boolean().unwrap() || lt.as_boolean().unwrap())
+                })
+            })
+            .map_err(|_| anyhow!("Unsupported less than equals between {:?} and {:?}", self, rhs))
+    }
+
+    fn gt(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+        self.eq(rhs)
+            .and_then(|eq| {
+                self.lt(rhs).map(|lt| {
+                    Expression::Bool(!eq.as_boolean().unwrap() && !lt.as_boolean().unwrap())
+                })
+            })
+            .map_err(|_| anyhow!("Unsupported greater than between {:?} and {:?}", self, rhs))
+    }
+
+    fn gte(&self, rhs: &Expression) -> anyhow::Result<Expression> {
+        self.lt(rhs)
+            .map(|result| Expression::Bool(!result.as_boolean().unwrap()))
+            .map_err(|_| anyhow!("Unsupported greater than equals between {:?} and {:?}", self, rhs))
     }
 }
