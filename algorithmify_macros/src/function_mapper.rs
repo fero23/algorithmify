@@ -4,7 +4,6 @@ use proc_macro::{Delimiter, TokenStream, TokenTree};
 struct FunctionParams {
     function_name: Option<String>,
     function_statements: Option<String>,
-    function_return_expression: Option<String>,
 }
 
 #[derive(Debug)]
@@ -69,24 +68,18 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
         }
     }
 
-    if params.function_name.is_none() || params.function_return_expression.is_none() {
-        panic!("Unrecognized function {:?}", trees)
-    }
-
     let builder_stream = format!(
         r###"
         fn {}__function_builder() -> algorithmify::Function {{
             algorithmify::Function::new(
                 vec![
                     {}
-                ],
-                {}
+                ]
             )
         }}
     "###,
         params.function_name.unwrap(),
-        params.function_statements.unwrap_or("".to_string()),
-        params.function_return_expression.unwrap()
+        params.function_statements.unwrap_or("".to_string())
     )
     .parse()
     .unwrap();
@@ -100,53 +93,64 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
 fn map_function_body(params: &mut FunctionParams, body: &proc_macro::Group) {
     params.function_statements = Some("".into());
     let body: Vec<TokenTree> = body.stream().into_iter().collect::<Vec<_>>();
-    let instructions = body
+    let statements = body
         .split(|tree| tree.to_string() == ";")
         .collect::<Vec<&[_]>>();
 
-    for instruction in &instructions[..instructions.len() - 1] {
-        map_statements(params, instruction);
+    for statement in &statements {
+        map_statements(params, statement);
     }
-
-    let result = map_expression(instructions[instructions.len() - 1].iter().cloned().into());
-    params.function_return_expression = Some(result);
 }
 
-fn map_statements(params: &mut FunctionParams, instruction: &[TokenTree]) {
-    let result = [try_map_assignment]
+fn map_statements(params: &mut FunctionParams, statement: &[TokenTree]) {
+    let result: bool = [try_map_assignment, try_map_expression]
         .iter()
-        .map(|f| f(params, instruction))
+        .map(|f| f(params, statement))
         .any(|result| result);
 
     if !result {
-        let reps = instruction
-            .iter()
-            .map(|i| i.to_string())
-            .collect::<Vec<_>>();
-        panic!("Instruction not recognized: {}", reps.join(" "));
+        let reps = statement.iter().map(|i| i.to_string()).collect::<Vec<_>>();
+        panic!("statement not recognized: {}", reps.join(" "));
     }
 }
 
-fn try_map_assignment(params: &mut FunctionParams, instruction: &[TokenTree]) -> bool {
-    if let Some((index, _)) = instruction
+fn try_map_assignment(params: &mut FunctionParams, statement: &[TokenTree]) -> bool {
+    if let Some((index, _)) = statement
         .iter()
         .enumerate()
         .find(|(_, token)| token.to_string() == "=")
     {
-        if let TokenTree::Ident(ident) = &instruction[index - 1] {
+        if let TokenTree::Ident(ident) = &statement[index - 1] {
             let identifier = map_reference(ident);
-            let expression = map_expression(instruction[index + 1..].iter().cloned().into());
+            let mut iterator: TokenIterator = statement[index + 1..].iter().cloned().into();
 
-            *params.function_statements.as_mut().unwrap() += &format!(
-                "algorithmify::expressions::Statement::Assignment({}, {}),",
-                identifier, expression
-            );
+            if let Some(expression) = map_expression(&mut iterator) {
+                *params.function_statements.as_mut().unwrap() += &format!(
+                    "algorithmify::expressions::Statement::Assignment({}, {}),",
+                    identifier, expression
+                );
 
-            return true;
+                return true;
+            }
         }
     }
 
     false
+}
+
+fn try_map_expression(params: &mut FunctionParams, statement: &[TokenTree]) -> bool {
+    let mut iterator: TokenIterator = statement.iter().cloned().into();
+
+    match (map_expression(&mut iterator), iterator.next()) {
+        (Some(expression), None) => {
+            *params.function_statements.as_mut().unwrap() += &format!(
+                "algorithmify::expressions::Statement::Expression({}),",
+                expression
+            );
+            true
+        }
+        _ => false,
+    }
 }
 
 fn map_first_tier_precedence_expression(iterator: &mut TokenIterator) -> Option<String> {
@@ -287,17 +291,8 @@ fn map_fourth_tier_precedence_expression(iterator: &mut TokenIterator) -> Option
     None
 }
 
-fn map_expression(mut iterator: TokenIterator) -> String {
-    let result = map_fourth_tier_precedence_expression(&mut iterator);
-
-    if let Some(result) = result {
-        result
-    } else {
-        panic!(
-            "Unknown token '{}'",
-            iterator.next().expect("Unexpected end of input")
-        )
-    }
+fn map_expression(iterator: &mut TokenIterator) -> Option<String> {
+    map_fourth_tier_precedence_expression(iterator)
 }
 
 fn map_addition(lhs: String, rhs: String) -> String {
@@ -364,7 +359,11 @@ fn map_value(tree: &TokenTree) -> Option<String> {
         }
         TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
             let children = group.stream().into_iter().collect::<Vec<_>>();
-            Some(map_expression(children.into_iter().into()))
+            let mut iterator: TokenIterator = children.into_iter().into();
+            match (map_expression(&mut iterator), iterator.next()) {
+                (Some(result), None) => Some(result),
+                _ => None,
+            }
         }
         _ => None,
     }

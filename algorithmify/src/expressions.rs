@@ -2,8 +2,9 @@ use std::collections::HashSet;
 
 use crate::interpreter::context::Context;
 
+use self::functions::{FunctionArgs, FunctionName};
 pub use self::{
-    float::Float, functions::Function, integer::Integer, operation::Operation,
+    float::Float, functions::Function, integer::Integer, loops::Loop, operation::Operation,
     reference::Reference, statements::Statement,
 };
 use anyhow::anyhow;
@@ -11,6 +12,7 @@ use anyhow::anyhow;
 pub mod float;
 pub mod functions;
 pub mod integer;
+pub mod loops;
 pub mod operation;
 pub mod reference;
 pub mod statements;
@@ -26,6 +28,8 @@ pub enum Expression {
     String(String),
     Bool(bool),
     Operation(Box<Operation>),
+    Loop(Box<Loop>),
+    FunctionCall(FunctionName, FunctionArgs),
 }
 
 impl Expression {
@@ -245,7 +249,13 @@ impl Expression {
                     Expression::Bool(eq.as_boolean().unwrap() || lt.as_boolean().unwrap())
                 })
             })
-            .map_err(|_| anyhow!("Unsupported less than equals between {:?} and {:?}", self, rhs))
+            .map_err(|_| {
+                anyhow!(
+                    "Unsupported less than equals between {:?} and {:?}",
+                    self,
+                    rhs
+                )
+            })
     }
 
     fn gt(&self, rhs: &Expression) -> anyhow::Result<Expression> {
@@ -261,6 +271,12 @@ impl Expression {
     fn gte(&self, rhs: &Expression) -> anyhow::Result<Expression> {
         self.lt(rhs)
             .map(|result| Expression::Bool(!result.as_boolean().unwrap()))
-            .map_err(|_| anyhow!("Unsupported greater than equals between {:?} and {:?}", self, rhs))
+            .map_err(|_| {
+                anyhow!(
+                    "Unsupported greater than equals between {:?} and {:?}",
+                    self,
+                    rhs
+                )
+            })
     }
 }

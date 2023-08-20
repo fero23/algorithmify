@@ -1,15 +1,11 @@
 use crate::interpreter::context::Context;
 
-use super::{
-    functions::{FunctionArgs, FunctionName},
-    reference::Reference,
-    Expression,
-};
+use super::{reference::Reference, Expression};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Statement {
-    FunctionCall(FunctionName, FunctionArgs),
     Assignment(Reference, Expression),
+    Expression(Expression),
 }
 
 impl Statement {
@@ -19,8 +15,10 @@ impl Statement {
                 let result = expression.execute(context)?;
                 context.insert_into_heap(reference, result)?;
                 Ok(Expression::Unit)
+            },
+            Self::Expression(expression) => {
+                expression.execute(context)
             }
-            _ => todo!(),
         }
     }
 }

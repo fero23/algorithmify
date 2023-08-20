@@ -7,21 +7,22 @@ pub type FunctionArgs = Vec<Expression>;
 
 pub struct Function {
     pub(crate) statements: Vec<Statement>,
-    pub(crate) return_expression: Expression,
 }
 
 impl Function {
-    pub fn new(statements: Vec<Statement>, return_expression: Expression) -> Self {
-        Self {
-            statements,
-            return_expression,
-        }
+    pub fn new(statements: Vec<Statement>) -> Self {
+        Self { statements }
     }
 
     pub fn execute(&self, context: &mut Context) -> anyhow::Result<Expression> {
-        for statement in &self.statements {
+        for statement in &self.statements[0..self.statements.len() - 1] {
             statement.execute(context)?;
         }
-        self.return_expression.execute(context)
+
+        if let Some(last_statement) = self.statements.last() {
+            last_statement.execute(context)
+        } else {
+            Ok(Expression::Unit)
+        }
     }
 }
