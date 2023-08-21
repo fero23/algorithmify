@@ -91,21 +91,22 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
 }
 
 fn map_function_body(params: &mut FunctionParams, body: &proc_macro::Group) {
-    params.function_statements = Some("".into());
     let body: Vec<TokenTree> = body.stream().into_iter().collect::<Vec<_>>();
     let statements = body
         .split(|tree| tree.to_string() == ";")
         .collect::<Vec<&[_]>>();
 
+    let mut body = String::new();
     for statement in &statements {
-        map_statements(params, statement);
+        map_statement(&mut body, statement);
     }
+    params.function_statements = Some(body);
 }
 
-fn map_statements(params: &mut FunctionParams, statement: &[TokenTree]) {
+fn map_statement(buffer: &mut String, statement: &[TokenTree]) {
     let result: bool = [try_map_assignment, try_map_expression]
         .iter()
-        .map(|f| f(params, statement))
+        .map(|f| f(buffer, statement))
         .any(|result| result);
 
     if !result {
@@ -114,7 +115,7 @@ fn map_statements(params: &mut FunctionParams, statement: &[TokenTree]) {
     }
 }
 
-fn try_map_assignment(params: &mut FunctionParams, statement: &[TokenTree]) -> bool {
+fn try_map_assignment(buffer: &mut String, statement: &[TokenTree]) -> bool {
     if let Some((index, _)) = statement
         .iter()
         .enumerate()
@@ -125,7 +126,7 @@ fn try_map_assignment(params: &mut FunctionParams, statement: &[TokenTree]) -> b
             let mut iterator: TokenIterator = statement[index + 1..].iter().cloned().into();
 
             if let Some(expression) = map_expression(&mut iterator) {
-                *params.function_statements.as_mut().unwrap() += &format!(
+                *buffer += &format!(
                     "algorithmify::expressions::Statement::Assignment({}, {}),",
                     identifier, expression
                 );
@@ -138,12 +139,12 @@ fn try_map_assignment(params: &mut FunctionParams, statement: &[TokenTree]) -> b
     false
 }
 
-fn try_map_expression(params: &mut FunctionParams, statement: &[TokenTree]) -> bool {
+fn try_map_expression(buffer: &mut String, statement: &[TokenTree]) -> bool {
     let mut iterator: TokenIterator = statement.iter().cloned().into();
 
     match (map_expression(&mut iterator), iterator.next()) {
         (Some(expression), None) => {
-            *params.function_statements.as_mut().unwrap() += &format!(
+            *buffer += &format!(
                 "algorithmify::expressions::Statement::Expression({}),",
                 expression
             );
