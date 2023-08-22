@@ -2,7 +2,8 @@ use proc_macro::TokenTree;
 
 use crate::{
     expression_mapper::{
-        map_integer, map_reference, map_reference_expression, map_statements, ExpressionMapping,
+        map_expression, map_integer, map_reference, map_reference_expression, map_statements,
+        ExpressionMapping,
     },
     token_iterator::TokenIterator,
 };
@@ -44,7 +45,7 @@ pub(crate) fn map_for_loop(iterator: &mut TokenIterator) -> Option<ExpressionMap
     );
 
     let mapping=  format!(
-        "algorithmify::expressions::Expression::Loop(Box::new(algorithmify::expressions::loops::Loop::RangedForLoop({}))),",
+        "algorithmify::expressions::Expression::Loop(Box::new(algorithmify::expressions::loops::Loop::RangedFor({}))),",
         for_loop
     );
 
@@ -62,4 +63,34 @@ fn map_for_loop_boundary_expression(expression: TokenTree) -> Option<String> {
         }
         _ => None,
     }
+}
+
+pub(crate) fn map_while_loop(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    iterator.try_get_next_token("while")?;
+
+    let condition = map_expression(iterator)?.mapping;
+
+    let statements = if let TokenTree::Group(group) = iterator.next()? {
+        map_statements(group)
+    } else {
+        return None;
+    };
+
+    let while_loop = format!(
+        "algorithmify::expressions::loops::WhileLoop {{
+        statements: vec![{}],
+        condition: {},
+    }}",
+        statements, condition
+    );
+
+    let mapping=  format!(
+        "algorithmify::expressions::Expression::Loop(Box::new(algorithmify::expressions::loops::Loop::While({}))),",
+        while_loop
+    );
+
+    Some(ExpressionMapping {
+        mapping,
+        needs_semicolon_unless_final: false,
+    })
 }

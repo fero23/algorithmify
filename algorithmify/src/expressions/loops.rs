@@ -7,14 +7,14 @@ use super::{Reference, Statement};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Loop {
     While(WhileLoop),
-    RangedForLoop(RangedForLoop),
+    RangedFor(RangedForLoop),
 }
 
 impl Loop {
     pub fn execute(&self, context: &mut Context) -> anyhow::Result<Expression> {
         match self {
             Self::While(while_loop) => while_loop.execute(context),
-            Self::RangedForLoop(for_loop) => for_loop.execute(context),
+            Self::RangedFor(for_loop) => for_loop.execute(context),
         }
     }
 }

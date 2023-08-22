@@ -61,3 +61,22 @@ pub fn test_for_loop_variable_reassignment() {
     assert_eq!(for_loop(), 1);
     assert_eq!(expression, Expression::Integer(1.into()));
 }
+
+#[test]
+pub fn test_while_loop() {
+    #[define_function_builder]
+    fn while_loop() -> usize {
+        let mut acc = 1;
+
+        while acc < 10 {
+            acc = acc + 1;
+        }
+
+        acc
+    }
+
+    let expression = Interpreter::execute_function(while_loop__function_builder()).unwrap();
+
+    assert_eq!(while_loop(), 10);
+    assert_eq!(expression, Expression::Integer(10.into()));
+}

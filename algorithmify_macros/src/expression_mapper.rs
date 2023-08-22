@@ -1,6 +1,9 @@
 use proc_macro::{Delimiter, TokenTree};
 
-use crate::{loop_mapper::map_for_loop, token_iterator::TokenIterator};
+use crate::{
+    loop_mapper::{map_for_loop, map_while_loop},
+    token_iterator::TokenIterator,
+};
 
 pub(crate) struct ExpressionMapping {
     pub(crate) mapping: String,
@@ -253,8 +256,11 @@ fn map_simple_expression(iterator: &mut TokenIterator) -> Option<ExpressionMappi
     }
 }
 
-fn map_expression(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
-    alt(iterator, &[map_for_loop, map_simple_expression])
+pub(crate) fn map_expression(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    alt(
+        iterator,
+        &[map_for_loop, map_while_loop, map_simple_expression],
+    )
 }
 
 fn map_addition(lhs: String, rhs: String) -> String {
