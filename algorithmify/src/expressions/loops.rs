@@ -24,6 +24,7 @@ pub struct WhileLoop {
     pub statements: Vec<Statement>,
     pub condition: Expression,
 }
+
 impl WhileLoop {
     fn execute(&self, context: &mut Context) -> Result<Expression, anyhow::Error> {
         let mut result = Expression::Unit;
@@ -45,6 +46,7 @@ pub struct RangedForLoop {
     pub start: Expression,
     pub end: Expression,
 }
+
 impl RangedForLoop {
     fn execute(&self, context: &mut Context) -> Result<Expression, anyhow::Error> {
         let mut result = Expression::Unit;

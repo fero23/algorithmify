@@ -1,6 +1,8 @@
 use proc_macro::TokenStream;
 
+mod expression_mapper;
 mod function_mapper;
+mod loop_mapper;
 mod token_container;
 mod token_iterator;
 
