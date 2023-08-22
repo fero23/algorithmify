@@ -15,10 +15,8 @@ impl Statement {
                 let result = expression.execute(context)?;
                 context.insert_into_heap(reference, result)?;
                 Ok(Expression::Unit)
-            },
-            Self::Expression(expression) => {
-                expression.execute(context)
             }
+            Self::Expression(expression) => expression.execute(context),
         }
     }
 }

@@ -33,12 +33,13 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn execute(&self, context: &Context) -> anyhow::Result<Expression> {
+    pub fn execute(&self, context: &mut Context) -> anyhow::Result<Expression> {
         let mut result = self.clone();
         result.try_replace_references(context)?;
 
         match result {
             Self::Operation(operation) => operation.execute(),
+            Self::Loop(loop_instance) => loop_instance.execute(context),
             _ => Ok(result),
         }
     }

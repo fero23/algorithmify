@@ -15,7 +15,7 @@ pub enum Integer {
 }
 
 impl Integer {
-    fn as_i64(&self) -> i64 {
+    pub fn as_i64(&self) -> i64 {
         match self {
             Self::I8(value) => *value as i64,
             Self::I16(value) => *value as i64,
@@ -27,6 +27,21 @@ impl Integer {
             Self::U32(value) => *value as i64,
             Self::U64(value) => *value as i64,
             Self::Usize(value) => *value as i64,
+        }
+    }
+
+    pub fn as_usize(&self) -> usize {
+        match self {
+            Self::I8(value) => *value as usize,
+            Self::I16(value) => *value as usize,
+            Self::I32(value) => *value as usize,
+            Self::I64(value) => *value as usize,
+            Self::Isize(value) => *value as usize,
+            Self::U8(value) => *value as usize,
+            Self::U16(value) => *value as usize,
+            Self::U32(value) => *value as usize,
+            Self::U64(value) => *value as usize,
+            Self::Usize(value) => *value,
         }
     }
 }
@@ -154,5 +169,17 @@ impl BitOr for Integer {
 impl From<i32> for Integer {
     fn from(value: i32) -> Self {
         Integer::I32(value)
+    }
+}
+
+impl From<i64> for Integer {
+    fn from(value: i64) -> Self {
+        Integer::I64(value)
+    }
+}
+
+impl From<usize> for Integer {
+    fn from(value: usize) -> Self {
+        Integer::Usize(value)
     }
 }

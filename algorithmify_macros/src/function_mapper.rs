@@ -1,3 +1,5 @@
+use std::ops::{Index, Range, RangeFrom, RangeInclusive};
+
 use proc_macro::{Delimiter, TokenStream, TokenTree};
 
 #[derive(Default, Debug)]
@@ -7,35 +9,132 @@ struct FunctionParams {
 }
 
 #[derive(Debug)]
-struct TokenIterator {
-    tokens: Vec<TokenTree>,
+enum TokenContainer<'a> {
+    Slice(&'a [TokenTree]),
+    Vec(Vec<TokenTree>),
+}
+
+impl<'a> TokenContainer<'a> {
+    fn len(&self) -> usize {
+        match self {
+            Self::Slice(slice) => slice.len(),
+            Self::Vec(vec) => vec.len(),
+        }
+    }
+}
+
+impl<'a> Index<usize> for TokenContainer<'a> {
+    type Output = TokenTree;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        match self {
+            Self::Slice(slice) => &slice[index],
+            Self::Vec(vec) => &vec[index],
+        }
+    }
+}
+
+impl<'a> Index<Range<usize>> for TokenContainer<'a> {
+    type Output = [TokenTree];
+
+    fn index(&self, index: Range<usize>) -> &Self::Output {
+        match self {
+            Self::Slice(slice) => &slice[index],
+            Self::Vec(vec) => &vec[index],
+        }
+    }
+}
+
+impl<'a> Index<RangeFrom<usize>> for TokenContainer<'a> {
+    type Output = [TokenTree];
+
+    fn index(&self, index: RangeFrom<usize>) -> &Self::Output {
+        match self {
+            Self::Slice(slice) => &slice[index],
+            Self::Vec(vec) => &vec[index],
+        }
+    }
+}
+
+impl<'a> Index<RangeInclusive<usize>> for TokenContainer<'a> {
+    type Output = [TokenTree];
+
+    fn index(&self, index: RangeInclusive<usize>) -> &Self::Output {
+        match self {
+            Self::Slice(slice) => &slice[index],
+            Self::Vec(vec) => &vec[index],
+        }
+    }
+}
+
+#[derive(Debug)]
+struct TokenIterator<'a> {
+    tokens: TokenContainer<'a>,
     index: usize,
 }
 
-impl<T> From<T> for TokenIterator
-where
-    T: Iterator<Item = TokenTree>,
-{
-    fn from(value: T) -> Self {
+impl From<Vec<TokenTree>> for TokenIterator<'static> {
+    fn from(value: Vec<TokenTree>) -> Self {
         TokenIterator {
-            tokens: value.collect(),
+            tokens: TokenContainer::Vec(value),
             index: 0,
         }
     }
 }
 
-impl TokenIterator {
+impl<'a> From<&'a [TokenTree]> for TokenIterator<'a> {
+    fn from(value: &'a [TokenTree]) -> Self {
+        TokenIterator {
+            tokens: TokenContainer::Slice(value),
+            index: 0,
+        }
+    }
+}
+
+impl<'a> TokenIterator<'a> {
     fn rewind_to(&mut self, index: usize) {
         self.index = index;
     }
 
+    fn peek(&self) -> Option<&TokenTree> {
+        if self.index >= self.tokens.len() {
+            None
+        } else {
+            Some(&self.tokens[self.index])
+        }
+    }
+
     fn next(&mut self) -> Option<&TokenTree> {
-        if self.index == self.tokens.len() {
+        if self.index >= self.tokens.len() {
             None
         } else {
             let next = Some(&self.tokens[self.index]);
             self.index += 1;
             next
+        }
+    }
+
+    fn try_get_next_token(&mut self, token: &str) -> Option<()> {
+        if self.index < self.tokens.len() && self.tokens[self.index].to_string() == token {
+            self.index += 1;
+            Some(())
+        } else {
+            None
+        }
+    }
+
+    fn next_nth(&mut self, count: usize) -> Option<&[TokenTree]> {
+        if self.index < self.tokens.len() {
+            let end_index = if self.index + count < self.tokens.len() {
+                self.index + count
+            } else {
+                self.tokens.len()
+            };
+            let slice = &self.tokens[self.index..end_index];
+            self.index = end_index;
+            Some(slice)
+        } else {
+            None
         }
     }
 
@@ -50,6 +149,42 @@ impl TokenIterator {
             Some(result)
         }
     }
+
+    fn get_until_delimiter(&mut self, token: &str) -> Option<&[TokenTree]> {
+        if let Some((index, _)) = self.tokens[self.index..]
+            .iter()
+            .enumerate()
+            .find(|(_, t)| t.to_string() == token)
+        {
+            let slice = &self.tokens[self.index..self.index + index];
+            self.index += slice.len() + 1;
+            Some(slice)
+        } else {
+            None
+        }
+    }
+}
+
+struct ExpressionMapping {
+    mapping: String,
+    needs_semicolon_unless_final: bool,
+}
+
+fn alt(
+    iterator: &mut TokenIterator,
+    functions: &[fn(&mut TokenIterator) -> Option<ExpressionMapping>],
+) -> Option<ExpressionMapping> {
+    let start_index = iterator.index;
+
+    for function in functions {
+        let result = function(iterator);
+        if result.is_some() {
+            return result;
+        } else {
+            iterator.index = start_index;
+        }
+    }
+    None
 }
 
 pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
@@ -91,44 +226,115 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
 }
 
 fn map_function_body(params: &mut FunctionParams, body: &proc_macro::Group) {
-    let body: Vec<TokenTree> = body.stream().into_iter().collect::<Vec<_>>();
-    let statements = body
-        .split(|tree| tree.to_string() == ";")
-        .collect::<Vec<&[_]>>();
-
-    let mut body = String::new();
-    for statement in &statements {
-        map_statement(&mut body, statement);
-    }
+    let body = map_statements(body);
     params.function_statements = Some(body);
 }
 
-fn map_statement(buffer: &mut String, statement: &[TokenTree]) {
+fn map_statements(body: &proc_macro::Group) -> String {
+    let body: Vec<TokenTree> = body.stream().into_iter().collect::<Vec<_>>();
+    let mut iterator: TokenIterator = body.into();
+
+    let mut body = String::new();
+    while iterator.peek().is_some() {
+        map_statement(&mut body, &mut iterator);
+    }
+    body
+}
+
+fn map_statement(buffer: &mut String, iterator: &mut TokenIterator) {
     let result: bool = [try_map_assignment, try_map_expression]
         .iter()
-        .map(|f| f(buffer, statement))
+        .map(|f| f(buffer, iterator))
         .any(|result| result);
 
     if !result {
-        let reps = statement.iter().map(|i| i.to_string()).collect::<Vec<_>>();
-        panic!("statement not recognized: {}", reps.join(" "));
+        if let Some(tokens) = iterator.next_nth(5) {
+            let reps = tokens.iter().map(|i| i.to_string()).collect::<Vec<_>>();
+            panic!("statement not recognized: {}", reps.join(" "));
+        } else {
+            panic!("end of statement reached unexpectedly");
+        }
     }
 }
 
-fn try_map_assignment(buffer: &mut String, statement: &[TokenTree]) -> bool {
-    if let Some((index, _)) = statement
-        .iter()
-        .enumerate()
-        .find(|(_, token)| token.to_string() == "=")
-    {
+fn map_for_loop(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    iterator.try_get_next_token("for")?;
+
+    iterator.try_get_next_token("mut");
+
+    let variable = if let Some(TokenTree::Ident(variable)) = iterator.next() {
+        map_reference(variable)
+    } else {
+        return None;
+    };
+
+    iterator.try_get_next_token("in")?;
+
+    let start = map_for_loop_boundary_expression(iterator.next().cloned()?)?;
+
+    iterator.try_get_next_token(".")?;
+    iterator.try_get_next_token(".")?;
+
+    let end = map_for_loop_boundary_expression(iterator.next().cloned()?)?;
+
+    let statements = if let TokenTree::Group(group) = iterator.next()? {
+        map_statements(group)
+    } else {
+        return None;
+    };
+
+    let for_loop = format!(
+        "algorithmify::expressions::loops::RangedForLoop {{
+        statements: vec![{}],
+        variable: {},
+        start: {},
+        end: {}
+    }}",
+        statements, variable, start, end
+    );
+
+    let mapping=  format!(
+        "algorithmify::expressions::Expression::Loop(Box::new(algorithmify::expressions::loops::Loop::RangedForLoop({}))),",
+        for_loop
+    );
+
+    Some(ExpressionMapping {
+        mapping,
+        needs_semicolon_unless_final: false,
+    })
+}
+
+fn map_for_loop_boundary_expression(expression: TokenTree) -> Option<String> {
+    match expression {
+        TokenTree::Ident(reference) => Some(map_reference_expression(&reference)),
+        TokenTree::Literal(literal) if literal.to_string().parse::<i32>().is_ok() => {
+            Some(map_integer(&literal))
+        }
+        _ => None,
+    }
+}
+
+fn try_map_assignment(buffer: &mut String, iterator: &mut TokenIterator) -> bool {
+    let start_index = iterator.index;
+
+    let statement = iterator.get_until_delimiter(";");
+    let find_result = statement.and_then(|statement| {
+        statement
+            .iter()
+            .enumerate()
+            .find(|(_, token)| token.to_string() == "=")
+            .map(|(index, _)| (statement, index))
+    });
+
+    if let Some((statement, index)) = find_result {
         if let TokenTree::Ident(ident) = &statement[index - 1] {
             let identifier = map_reference(ident);
-            let mut iterator: TokenIterator = statement[index + 1..].iter().cloned().into();
+            let mut expression_iterator: TokenIterator = statement[index + 1..].into();
 
-            if let Some(expression) = map_expression(&mut iterator) {
+            if let Some(expression) = map_expression(&mut expression_iterator) {
                 *buffer += &format!(
                     "algorithmify::expressions::Statement::Assignment({}, {}),",
-                    identifier, expression
+                    identifier, expression.mapping
                 );
 
                 return true;
@@ -136,22 +342,29 @@ fn try_map_assignment(buffer: &mut String, statement: &[TokenTree]) -> bool {
         }
     }
 
+    iterator.rewind_to(start_index);
     false
 }
 
-fn try_map_expression(buffer: &mut String, statement: &[TokenTree]) -> bool {
-    let mut iterator: TokenIterator = statement.iter().cloned().into();
+fn try_map_expression(buffer: &mut String, iterator: &mut TokenIterator) -> bool {
+    let start_index = iterator.index;
 
-    match (map_expression(&mut iterator), iterator.next()) {
-        (Some(expression), None) => {
+    if let Some(expression) = map_expression(iterator) {
+        if let (Some(_), Some(_), _) | (None, None, _) | (None, Some(_), false) = (
+            iterator.try_get_next_token(";"),
+            iterator.peek(),
+            expression.needs_semicolon_unless_final,
+        ) {
             *buffer += &format!(
                 "algorithmify::expressions::Statement::Expression({}),",
-                expression
+                expression.mapping
             );
-            true
+            return true;
         }
-        _ => false,
     }
+
+    iterator.rewind_to(start_index);
+    false
 }
 
 fn map_first_tier_precedence_expression(iterator: &mut TokenIterator) -> Option<String> {
@@ -292,8 +505,19 @@ fn map_fourth_tier_precedence_expression(iterator: &mut TokenIterator) -> Option
     None
 }
 
-fn map_expression(iterator: &mut TokenIterator) -> Option<String> {
-    map_fourth_tier_precedence_expression(iterator)
+fn map_simple_expression(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    if let Some(mapping) = map_fourth_tier_precedence_expression(iterator) {
+        Some(ExpressionMapping {
+            mapping,
+            needs_semicolon_unless_final: true,
+        })
+    } else {
+        None
+    }
+}
+
+fn map_expression(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    alt(iterator, &[map_for_loop, map_simple_expression])
 }
 
 fn map_addition(lhs: String, rhs: String) -> String {
@@ -360,9 +584,9 @@ fn map_value(tree: &TokenTree) -> Option<String> {
         }
         TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
             let children = group.stream().into_iter().collect::<Vec<_>>();
-            let mut iterator: TokenIterator = children.into_iter().into();
+            let mut iterator: TokenIterator = children.into();
             match (map_expression(&mut iterator), iterator.next()) {
-                (Some(result), None) => Some(result),
+                (Some(result), None) => Some(result.mapping),
                 _ => None,
             }
         }
