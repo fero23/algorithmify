@@ -36,11 +36,11 @@ pub(crate) fn map_for_loop(iterator: &mut TokenIterator) -> Option<ExpressionMap
 
     let for_loop = format!(
         "algorithmify::expressions::loops::RangedForLoop {{
-        statements: vec![{}],
-        variable: {},
-        start: {},
-        end: {}
-    }}",
+            statements: vec![{}],
+            variable: {},
+            start: {},
+            end: {}
+        }}",
         statements, variable, start, end
     );
 
@@ -78,9 +78,9 @@ pub(crate) fn map_while_loop(iterator: &mut TokenIterator) -> Option<ExpressionM
 
     let while_loop = format!(
         "algorithmify::expressions::loops::WhileLoop {{
-        statements: vec![{}],
-        condition: {},
-    }}",
+            statements: vec![{}],
+            condition: {},
+        }}",
         statements, condition
     );
 

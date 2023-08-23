@@ -2,13 +2,18 @@ use std::collections::HashSet;
 
 use crate::interpreter::context::Context;
 
-use self::functions::{FunctionArgs, FunctionName};
+use self::{
+    block::Block,
+    functions::{FunctionArgs, FunctionName},
+};
 pub use self::{
-    float::Float, functions::Function, integer::Integer, loops::Loop, operation::Operation,
-    reference::Reference, statements::Statement,
+    conditions::Condition, float::Float, functions::Function, integer::Integer, loops::Loop,
+    operation::Operation, reference::Reference, statements::Statement,
 };
 use anyhow::anyhow;
 
+pub mod block;
+pub mod conditions;
 pub mod float;
 pub mod functions;
 pub mod integer;
@@ -28,8 +33,10 @@ pub enum Expression {
     String(String),
     Bool(bool),
     Operation(Box<Operation>),
+    Condition(Box<Condition>),
     Loop(Box<Loop>),
     FunctionCall(FunctionName, FunctionArgs),
+    Block(Box<Block>),
 }
 
 impl Expression {
@@ -40,6 +47,8 @@ impl Expression {
         match result {
             Self::Operation(operation) => operation.execute(),
             Self::Loop(loop_instance) => loop_instance.execute(context),
+            Self::Condition(condition) => condition.execute(context),
+            Self::Block(block) => block.execute(context),
             _ => Ok(result),
         }
     }

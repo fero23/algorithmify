@@ -1,6 +1,7 @@
 use proc_macro::{Delimiter, TokenTree};
 
 use crate::{
+    condition_mapper::map_if_condition,
     loop_mapper::{map_for_loop, map_while_loop},
     token_iterator::TokenIterator,
 };
@@ -24,6 +25,7 @@ pub(crate) fn alt(
             iterator.index = start_index;
         }
     }
+
     None
 }
 
@@ -259,8 +261,40 @@ fn map_simple_expression(iterator: &mut TokenIterator) -> Option<ExpressionMappi
 pub(crate) fn map_expression(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
     alt(
         iterator,
-        &[map_for_loop, map_while_loop, map_simple_expression],
+        &[
+            map_if_condition,
+            map_block,
+            map_for_loop,
+            map_while_loop,
+            map_simple_expression,
+        ],
     )
+}
+
+pub(crate) fn map_block(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    match iterator.next() {
+        Some(TokenTree::Group(group)) if group.delimiter() == Delimiter::Brace => {
+            let statements = map_statements(group);
+
+            let block = format!(
+                "algorithmify::expressions::block::Block {{
+                    statements: vec![{}],
+                }}",
+                statements
+            );
+
+            let mapping = format!(
+                "algorithmify::expressions::Expression::Block(Box::new({})),",
+                block
+            );
+
+            Some(ExpressionMapping {
+                mapping,
+                needs_semicolon_unless_final: false,
+            })
+        }
+        _ => None,
+    }
 }
 
 fn map_addition(lhs: String, rhs: String) -> String {
