@@ -26,6 +26,8 @@ impl If {
     fn execute(&self, context: &mut Context) -> Result<Expression, anyhow::Error> {
         let mut result = Expression::Unit;
 
+        context.push_stack();
+
         if let Expression::Bool(true) = self.condition.execute(context)? {
             for statement in &self.statements {
                 result = statement.execute(context)?;
@@ -35,6 +37,8 @@ impl If {
                 result = else_clause.execute(context)?;
             }
         }
+
+        context.pop_stack();
 
         Ok(result)
     }

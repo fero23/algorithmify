@@ -15,14 +15,20 @@ impl Function {
     }
 
     pub fn execute(&self, context: &mut Context) -> anyhow::Result<Expression> {
+        context.push_stack();
+
         for statement in &self.statements[0..self.statements.len() - 1] {
             statement.execute(context)?;
         }
 
-        if let Some(last_statement) = self.statements.last() {
+        let result = if let Some(last_statement) = self.statements.last() {
             last_statement.execute(context)
         } else {
             Ok(Expression::Unit)
-        }
+        }?;
+
+        context.pop_stack();
+
+        Ok(result)
     }
 }

@@ -30,9 +30,13 @@ impl WhileLoop {
         let mut result = Expression::Unit;
 
         while let Expression::Bool(true) = self.condition.execute(context)? {
+            context.push_stack();
+
             for statement in &self.statements {
                 result = statement.execute(context)?;
             }
+
+            context.pop_stack();
         }
 
         Ok(result)
@@ -64,10 +68,14 @@ impl RangedForLoop {
             };
 
         for i in start..end {
+            context.push_stack();
+
             context.insert_into_heap(&self.variable, Expression::Integer(i.into()))?;
             for statement in &self.statements {
                 result = statement.execute(context)?;
             }
+
+            context.pop_stack();
         }
 
         if let Some(previous_variable_value) = previous_variable_value {

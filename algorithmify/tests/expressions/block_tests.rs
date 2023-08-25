@@ -18,3 +18,23 @@ pub fn test_block() {
     assert_eq!(block(), 3);
     assert_eq!(expression, Expression::Integer(3.into()));
 }
+
+#[test]
+pub fn test_block_scope() {
+    #[define_function_builder]
+    fn block() -> usize {
+        let result = 5;
+
+        {
+            let mut _result = 1;
+            _result = 2;
+        }
+
+        result
+    }
+
+    let expression = Interpreter::execute_function(block__function_builder()).unwrap();
+
+    assert_eq!(block(), 5);
+    assert_eq!(expression, Expression::Integer(5.into()));
+}
