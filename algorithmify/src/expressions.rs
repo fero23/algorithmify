@@ -5,7 +5,7 @@ pub use self::{
     conditions::Condition,
     float::Float,
     functions::Function,
-    functions::{FunctionArgs, FunctionName},
+    functions::{FunctionName, FunctionParams},
     integer::Integer,
     loops::Loop,
     operation::Operation,
@@ -38,7 +38,7 @@ pub enum Expression {
     Operation(Box<Operation>),
     Condition(Box<Condition>),
     Loop(Box<Loop>),
-    FunctionCall(FunctionName, FunctionArgs),
+    FunctionCall(FunctionName, FunctionParams),
     Block(Box<Block>),
 }
 

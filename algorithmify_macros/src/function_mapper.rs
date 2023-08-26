@@ -1,10 +1,14 @@
 use proc_macro::{Delimiter, TokenStream, TokenTree};
 
-use crate::expression_mapper::map_statements;
+use crate::{
+    expression_mapper::{map_statements, try_get_identifier},
+    token_iterator::TokenIterator,
+};
 
 #[derive(Default, Debug)]
 struct FunctionParams {
     function_name: Option<String>,
+    function_args: Option<String>,
     function_statements: Option<String>,
 }
 
@@ -16,6 +20,9 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
         match tree {
             TokenTree::Ident(identifier) if identifier.to_string() == "fn" => {
                 params.function_name = Some(trees[index + 1].to_string());
+            }
+            TokenTree::Group(body) if body.delimiter() == Delimiter::Parenthesis => {
+                params.function_args = map_args(body);
             }
             TokenTree::Group(body) if body.delimiter() == Delimiter::Brace => {
                 map_function_body(&mut params, body);
@@ -30,11 +37,15 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
             algorithmify::Function::new(
                 vec![
                     {}
+                ],
+                vec![
+                    {}
                 ]
             )
         }}
     "###,
         params.function_name.unwrap(),
+        params.function_args.unwrap_or("".to_string()),
         params.function_statements.unwrap_or("".to_string())
     )
     .parse()
@@ -44,6 +55,20 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
         .into_iter()
         .flat_map(|s| s)
         .collect()
+}
+
+fn map_args(body: &proc_macro::Group) -> Option<String> {
+    let mut iterator: TokenIterator = body.stream().into_iter().collect::<Vec<_>>().into();
+
+    let mut args = Vec::new();
+    while let Some(_) = iterator.peek() {
+        let arg = try_get_identifier(&mut iterator)?;
+        iterator.try_get_next_token(":")?;
+        try_get_identifier(&mut iterator)?;
+        args.push(arg);
+    }
+
+    Some(args.join(", "))
 }
 
 fn map_function_body(params: &mut FunctionParams, body: &proc_macro::Group) {

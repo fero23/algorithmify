@@ -17,6 +17,6 @@ impl Interpreter {
 
     pub fn execute_function(function: Function) -> anyhow::Result<Expression> {
         let mut interpreter = Interpreter::new();
-        function.execute(&mut interpreter.context)
+        function.execute(&mut interpreter.context, vec![])
     }
 }

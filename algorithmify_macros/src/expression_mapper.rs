@@ -424,6 +424,13 @@ pub(crate) fn try_get<T: FromStr>(iterator: &mut TokenIterator) -> Option<T> {
     }
 }
 
+pub(crate) fn try_get_identifier(iterator: &mut TokenIterator) -> Option<String> {
+    match iterator.next()? {
+        TokenTree::Ident(identifier) => Some(identifier.to_string()),
+        _ => None,
+    }
+}
+
 pub(crate) fn map_integer(literal: &proc_macro::Literal) -> String {
     let number = literal.to_string().parse::<i32>().unwrap();
     format!(

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::anyhow;
 
-use crate::expressions::{reference::Reference, Expression};
+use crate::expressions::{functions::FunctionArgParamPair, reference::Reference, Expression};
 
 pub struct Context {
     stack: Vec<HashMap<String, Expression>>,
@@ -46,6 +46,14 @@ impl Context {
 
     pub(crate) fn push_stack(&mut self) {
         self.stack.push(HashMap::new());
+    }
+
+    pub(crate) fn push_stack_from(&mut self, args: Vec<FunctionArgParamPair>) {
+        let mut map = HashMap::new();
+        for (key, value) in args {
+            map.insert(key, value);
+        }
+        self.stack.push(map);
     }
 
     pub(crate) fn pop_stack(&mut self) {
