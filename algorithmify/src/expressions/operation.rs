@@ -1,8 +1,6 @@
-use std::collections::HashSet;
-
 use crate::interpreter::context::Context;
 
-use super::{reference::Reference, Expression};
+use super::Expression;
 use anyhow::anyhow;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,128 +39,6 @@ impl Operation {
             Self::Gt(lhs, rhs) => gt(&lhs.execute(context)?, &rhs.execute(context)?)?,
             Self::Gte(lhs, rhs) => gte(&lhs.execute(context)?, &rhs.execute(context)?)?,
         })
-    }
-
-    pub fn replace(&mut self, reference: &Reference, value: &Expression) {
-        match self {
-            Self::Add(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Sub(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Mul(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Div(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::BitAnd(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::BitOr(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::And(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Or(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Eq(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Ne(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Lt(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Lte(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Gt(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-            Self::Gte(lhs, rhs) => {
-                lhs.replace(reference, value);
-                rhs.replace(reference, value);
-            }
-        }
-    }
-
-    pub fn add_to_reference_set(&self, set: &mut HashSet<Reference>) {
-        match self {
-            Self::Add(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Sub(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Mul(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Div(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::BitAnd(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::BitOr(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::And(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Or(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Eq(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Ne(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Lt(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Lte(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Gt(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-            Self::Gte(lhs, rhs) => {
-                lhs.add_to_reference_set(set);
-                rhs.add_to_reference_set(set);
-            }
-        }
     }
 }
 

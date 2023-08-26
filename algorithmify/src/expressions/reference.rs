@@ -9,6 +9,16 @@ pub enum Reference {
     IndexedAccess(String, usize),
 }
 
+impl Reference {
+    pub(crate) fn execute(&self, context: &mut Context) -> Result<Expression, anyhow::Error> {
+        if let Some(expression) = context.search_reference(self) {
+            Ok(expression.clone())
+        } else {
+            return Err(anyhow!("Unknown reference {}", self));
+        }
+    }
+}
+
 impl Display for Reference {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
