@@ -4,6 +4,7 @@ mod condition_mapper;
 mod expression_mapper;
 mod function_mapper;
 mod loop_mapper;
+mod statement_mapper;
 mod token_container;
 mod token_iterator;
 

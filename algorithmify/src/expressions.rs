@@ -2,13 +2,18 @@ use std::collections::HashSet;
 
 use crate::interpreter::context::Context;
 
-use self::{
-    block::Block,
-    functions::{FunctionArgs, FunctionName},
-};
 pub use self::{
-    conditions::Condition, float::Float, functions::Function, integer::Integer, loops::Loop,
-    operation::Operation, reference::Reference, statements::Statement,
+    block::Block,
+    conditions::Condition,
+    float::Float,
+    functions::Function,
+    functions::{FunctionArgs, FunctionName},
+    integer::Integer,
+    loops::Loop,
+    operation::Operation,
+    reference::IndexedAccessExpression,
+    reference::Reference,
+    statements::Statement,
 };
 use anyhow::anyhow;
 
@@ -27,6 +32,7 @@ pub enum Expression {
     Unit,
     Vector(Vec<Expression>),
     Reference(Reference),
+    IndexedAccessExpression(IndexedAccessExpression),
     Integer(Integer),
     Float(Float),
     Char(char),
@@ -45,7 +51,8 @@ impl Expression {
         result.try_replace_references(context)?;
 
         match result {
-            Self::Operation(operation) => operation.execute(),
+            Self::IndexedAccessExpression(expression) => expression.execute(context),
+            Self::Operation(operation) => operation.execute(context),
             Self::Loop(loop_instance) => loop_instance.execute(context),
             Self::Condition(condition) => condition.execute(context),
             Self::Block(block) => block.execute(context),
@@ -92,16 +99,6 @@ impl Expression {
             Self::Operation(operation) => operation.replace(reference, value),
             _ => {}
         }
-    }
-
-    fn try_resolve_inner(&self) -> Expression {
-        if let Expression::Operation(operation) = self {
-            if let Ok(resolution) = operation.execute() {
-                return resolution;
-            }
-        }
-
-        self.clone()
     }
 
     fn as_boolean(&self) -> Option<bool> {

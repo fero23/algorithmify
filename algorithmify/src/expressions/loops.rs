@@ -55,6 +55,8 @@ impl RangedForLoop {
     fn execute(&self, context: &mut Context) -> Result<Expression, anyhow::Error> {
         let mut result = Expression::Unit;
 
+        context.push_stack();
+
         let previous_variable_value = context.search_reference(&self.variable).cloned();
 
         let start = self.start.execute(context)?;
@@ -81,6 +83,8 @@ impl RangedForLoop {
         if let Some(previous_variable_value) = previous_variable_value {
             context.insert_into_heap(&self.variable, previous_variable_value)?;
         }
+
+        context.pop_stack();
 
         Ok(result)
     }

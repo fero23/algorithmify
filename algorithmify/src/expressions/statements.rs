@@ -1,10 +1,11 @@
+use super::{reference::Reference, Expression, IndexedAccessExpression};
 use crate::interpreter::context::Context;
-
-use super::{reference::Reference, Expression};
+use anyhow::anyhow;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Statement {
     Assignment(Reference, Expression),
+    IndexedAssigment(IndexedAccessExpression, Expression),
     Expression(Expression),
 }
 
@@ -16,6 +17,15 @@ impl Statement {
                 context.insert_into_heap(reference, result)?;
                 Ok(Expression::Unit)
             }
+            Self::IndexedAssigment(key, value) => match key.to_reference(context) {
+                Ok(Expression::Reference(reference)) => {
+                    let result = value.execute(context)?;
+                    context.insert_into_heap(&reference, result)?;
+                    Ok(Expression::Unit)
+                }
+                Ok(_) => Err(anyhow!("Cannot assign to expression {:?}", key)),
+                err @ Err(_) => err,
+            },
             Self::Expression(expression) => expression.execute(context),
         }
     }

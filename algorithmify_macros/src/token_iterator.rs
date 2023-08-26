@@ -84,18 +84,4 @@ impl<'a> TokenIterator<'a> {
             Some(result)
         }
     }
-
-    pub(crate) fn get_until_delimiter(&mut self, token: &str) -> Option<&[TokenTree]> {
-        if let Some((index, _)) = self.tokens[self.index..]
-            .iter()
-            .enumerate()
-            .find(|(_, t)| t.to_string() == token)
-        {
-            let slice = &self.tokens[self.index..self.index + index];
-            self.index += slice.len() + 1;
-            Some(slice)
-        } else {
-            None
-        }
-    }
 }

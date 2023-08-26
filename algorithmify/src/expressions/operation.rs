@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use crate::interpreter::context::Context;
+
 use super::{reference::Reference, Expression};
 use anyhow::anyhow;
 
@@ -22,22 +24,22 @@ pub enum Operation {
 }
 
 impl Operation {
-    pub fn execute(&self) -> anyhow::Result<Expression> {
+    pub fn execute(&self, context: &mut Context) -> anyhow::Result<Expression> {
         Ok(match self {
-            Self::Add(lhs, rhs) => add(lhs.try_resolve_inner(), rhs.try_resolve_inner())?,
-            Self::Sub(lhs, rhs) => sub(lhs.try_resolve_inner(), rhs.try_resolve_inner())?,
-            Self::Mul(lhs, rhs) => mul(lhs.try_resolve_inner(), rhs.try_resolve_inner())?,
-            Self::Div(lhs, rhs) => div(lhs.try_resolve_inner(), rhs.try_resolve_inner())?,
-            Self::BitAnd(lhs, rhs) => bitand(lhs.try_resolve_inner(), rhs.try_resolve_inner())?,
-            Self::BitOr(lhs, rhs) => bitor(lhs.try_resolve_inner(), rhs.try_resolve_inner())?,
-            Self::And(lhs, rhs) => and(lhs.try_resolve_inner(), rhs.try_resolve_inner())?,
-            Self::Or(lhs, rhs) => or(lhs.try_resolve_inner(), rhs.try_resolve_inner())?,
-            Self::Eq(lhs, rhs) => eq(&lhs.try_resolve_inner(), &rhs.try_resolve_inner())?,
-            Self::Ne(lhs, rhs) => ne(&lhs.try_resolve_inner(), &rhs.try_resolve_inner())?,
-            Self::Lt(lhs, rhs) => lt(&lhs.try_resolve_inner(), &rhs.try_resolve_inner())?,
-            Self::Lte(lhs, rhs) => lte(&lhs.try_resolve_inner(), &rhs.try_resolve_inner())?,
-            Self::Gt(lhs, rhs) => gt(&lhs.try_resolve_inner(), &rhs.try_resolve_inner())?,
-            Self::Gte(lhs, rhs) => gte(&lhs.try_resolve_inner(), &rhs.try_resolve_inner())?,
+            Self::Add(lhs, rhs) => add(lhs.execute(context)?, rhs.execute(context)?)?,
+            Self::Sub(lhs, rhs) => sub(lhs.execute(context)?, rhs.execute(context)?)?,
+            Self::Mul(lhs, rhs) => mul(lhs.execute(context)?, rhs.execute(context)?)?,
+            Self::Div(lhs, rhs) => div(lhs.execute(context)?, rhs.execute(context)?)?,
+            Self::BitAnd(lhs, rhs) => bitand(lhs.execute(context)?, rhs.execute(context)?)?,
+            Self::BitOr(lhs, rhs) => bitor(lhs.execute(context)?, rhs.execute(context)?)?,
+            Self::And(lhs, rhs) => and(lhs.execute(context)?, rhs.execute(context)?)?,
+            Self::Or(lhs, rhs) => or(lhs.execute(context)?, rhs.execute(context)?)?,
+            Self::Eq(lhs, rhs) => eq(&lhs.execute(context)?, &rhs.execute(context)?)?,
+            Self::Ne(lhs, rhs) => ne(&lhs.execute(context)?, &rhs.execute(context)?)?,
+            Self::Lt(lhs, rhs) => lt(&lhs.execute(context)?, &rhs.execute(context)?)?,
+            Self::Lte(lhs, rhs) => lte(&lhs.execute(context)?, &rhs.execute(context)?)?,
+            Self::Gt(lhs, rhs) => gt(&lhs.execute(context)?, &rhs.execute(context)?)?,
+            Self::Gte(lhs, rhs) => gte(&lhs.execute(context)?, &rhs.execute(context)?)?,
         })
     }
 
