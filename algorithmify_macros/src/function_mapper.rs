@@ -65,7 +65,8 @@ fn map_args(body: &proc_macro::Group) -> Option<String> {
         let arg = try_get_identifier(&mut iterator)?;
         iterator.try_get_next_token(":")?;
         try_get_identifier(&mut iterator)?;
-        args.push(arg);
+        args.push(format!("\"{}\".to_owned()", arg));
+        iterator.try_get_next_token(",");
     }
 
     Some(args.join(", "))

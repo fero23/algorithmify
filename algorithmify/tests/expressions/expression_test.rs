@@ -35,3 +35,22 @@ pub fn test_vector_copy() {
     assert_eq!(vector_copy(), 6);
     assert_eq!(expression, Expression::Integer(6.into()));
 }
+
+#[test]
+pub fn test_function_call() {
+    #[define_function_builder]
+    fn sum(a: i32, b: i32) -> i32 {
+        a + b
+    }
+
+    #[define_function_builder]
+    fn function_call() -> i32 {
+        let a = sum(1, 2);
+        sum(a, 2)
+    }
+
+    let expression = Interpreter::execute_function(function_call__function_builder()).unwrap();
+
+    assert_eq!(function_call(), 5);
+    assert_eq!(expression, Expression::Integer(5.into()));
+}

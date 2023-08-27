@@ -14,7 +14,7 @@ impl Reference {
         if let Some(expression) = context.search_reference(self) {
             Ok(expression.clone())
         } else {
-            return Err(anyhow!("Unknown reference {}", self));
+            return Err(anyhow!("Unknown reference '{}'", self));
         }
     }
 }

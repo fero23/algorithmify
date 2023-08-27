@@ -4,8 +4,7 @@ pub use self::{
     block::Block,
     conditions::Condition,
     float::Float,
-    functions::Function,
-    functions::{FunctionName, FunctionParams},
+    functions::{Function, FunctionBuilder, FunctionCall, FunctionParams},
     integer::Integer,
     loops::Loop,
     operation::Operation,
@@ -38,7 +37,7 @@ pub enum Expression {
     Operation(Box<Operation>),
     Condition(Box<Condition>),
     Loop(Box<Loop>),
-    FunctionCall(FunctionName, FunctionParams),
+    FunctionCall(FunctionCall),
     Block(Box<Block>),
 }
 
@@ -51,6 +50,7 @@ impl Expression {
             Self::Loop(loop_instance) => loop_instance.execute(context),
             Self::Condition(condition) => condition.execute(context),
             Self::Block(block) => block.execute(context),
+            Self::FunctionCall(function_call) => function_call.execute(context),
             _ => Ok(self.clone()),
         }
     }

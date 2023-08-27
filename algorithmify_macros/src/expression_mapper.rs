@@ -229,6 +229,39 @@ fn map_vec_sequence(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
     })
 }
 
+fn map_function_call(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    let identifier = try_get_identifier(iterator)?;
+    match iterator.next()? {
+        TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
+            let mut args_iterator: TokenIterator =
+                group.stream().into_iter().collect::<Vec<_>>().into();
+
+            let mut expressions = String::new();
+
+            while let Some(expression) = map_expression(&mut args_iterator) {
+                expressions += &expression.mapping;
+                expressions += ",";
+
+                args_iterator.try_get_next_token(",");
+            }
+
+            let mapping = format!(
+                "algorithmify::expressions::Expression::FunctionCall(algorithmify::expressions::FunctionCall{{
+                    builder: {}__function_builder, 
+                    params: vec![{}]
+                }})",
+                identifier, expressions
+            );
+
+            Some(ExpressionMapping {
+                mapping,
+                needs_semicolon_unless_final: true,
+            })
+        }
+        _ => None,
+    }
+}
+
 fn map_vec_shorthand(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
     iterator.try_get_next_token("vec")?;
     iterator.try_get_next_token("!")?;
@@ -264,6 +297,7 @@ pub(crate) fn map_expression(iterator: &mut TokenIterator) -> Option<ExpressionM
     alt(
         iterator,
         &[
+            map_function_call,
             map_vec_shorthand,
             map_vec_sequence,
             map_if_condition,

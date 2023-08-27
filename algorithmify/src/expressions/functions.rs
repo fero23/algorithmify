@@ -2,7 +2,7 @@ use crate::interpreter::context::Context;
 
 use super::{statements::Statement, Expression};
 
-pub type FunctionName = String;
+pub type FunctionBuilder = fn() -> Function;
 pub type FunctionArgs = Vec<String>;
 pub type FunctionParams = Vec<Expression>;
 pub type FunctionArgParamPair = (String, Expression);
@@ -38,5 +38,22 @@ impl Function {
         context.pop_stack();
 
         Ok(result)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct FunctionCall {
+    pub builder: FunctionBuilder,
+    pub params: FunctionParams,
+}
+
+impl FunctionCall {
+    pub(crate) fn execute(&self, context: &mut Context) -> anyhow::Result<Expression> {
+        let args = self
+            .params
+            .iter()
+            .map(|expression| expression.execute(context))
+            .collect::<anyhow::Result<Vec<_>>>()?;
+        (self.builder)().execute(context, args)
     }
 }
