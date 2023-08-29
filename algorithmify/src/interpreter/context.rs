@@ -2,15 +2,23 @@ use std::collections::HashMap;
 
 use anyhow::anyhow;
 
-use crate::expressions::{functions::FunctionArgParamPair, reference::Reference, Expression};
+use crate::expressions::{
+    functions::FunctionArgParamPair, loops::Contract, reference::Reference, Expression,
+};
+
+pub type ContractMap = HashMap<String, Contract>;
 
 pub struct Context {
     stack: Vec<HashMap<String, Expression>>,
+    contracts: ContractMap,
 }
 
 impl Context {
-    pub(crate) fn new() -> Self {
-        Self { stack: Vec::new() }
+    pub(crate) fn new(contracts: ContractMap) -> Self {
+        Self {
+            stack: Vec::new(),
+            contracts,
+        }
     }
 
     fn search_expression(&self, key: &str) -> Option<&Expression> {
@@ -89,5 +97,13 @@ impl Context {
         }
 
         Ok(())
+    }
+
+    pub(crate) fn get_contract(&self, tag: Option<&String>) -> Contract {
+        if let Some(contract) = tag.and_then(|tag| self.contracts.get(tag)) {
+            contract.clone()
+        } else {
+            Default::default()
+        }
     }
 }

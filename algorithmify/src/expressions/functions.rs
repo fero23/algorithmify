@@ -1,4 +1,4 @@
-use crate::interpreter::context::Context;
+use crate::{interpreter::context::Context, interpreter::context::ContractMap};
 
 use super::{statements::Statement, Expression};
 
@@ -10,11 +10,16 @@ pub type FunctionArgParamPair = (String, Expression);
 pub struct Function {
     pub(crate) args: FunctionArgs,
     pub(crate) statements: Vec<Statement>,
+    pub(crate) contracts: ContractMap,
 }
 
 impl Function {
-    pub fn new(args: FunctionArgs, statements: Vec<Statement>) -> Self {
-        Self { args, statements }
+    pub fn new(args: FunctionArgs, statements: Vec<Statement>, contracts: ContractMap) -> Self {
+        Self {
+            args,
+            statements,
+            contracts,
+        }
     }
 
     pub fn execute(
@@ -54,6 +59,9 @@ impl FunctionCall {
             .iter()
             .map(|expression| expression.execute(context))
             .collect::<anyhow::Result<Vec<_>>>()?;
-        (self.builder)().execute(context, args)
+
+        let function = (self.builder)();
+        let mut child_context = Context::new(function.contracts.clone());
+        function.execute(&mut child_context, args)
     }
 }

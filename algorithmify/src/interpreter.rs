@@ -1,22 +1,22 @@
 use crate::{expressions::Expression, Function};
 
-use self::context::Context;
+use self::context::{Context, ContractMap};
 
 pub mod context;
 
 pub struct Interpreter {
-    context: Context,
+    root_context: Context,
 }
 
 impl Interpreter {
-    pub fn new() -> Self {
+    pub fn new(contracts: ContractMap) -> Self {
         Self {
-            context: Context::new(),
+            root_context: Context::new(contracts),
         }
     }
 
     pub fn execute_function(function: Function) -> anyhow::Result<Expression> {
-        let mut interpreter = Interpreter::new();
-        function.execute(&mut interpreter.context, vec![])
+        let mut interpreter = Interpreter::new(function.contracts.clone());
+        function.execute(&mut interpreter.root_context, vec![])
     }
 }

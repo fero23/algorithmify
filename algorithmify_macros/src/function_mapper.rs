@@ -12,7 +12,7 @@ struct FunctionParams {
     function_statements: Option<String>,
 }
 
-pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
+pub(crate) fn define_function_builder(stream: TokenStream, attrs: TokenStream) -> TokenStream {
     let trees = stream.clone().into_iter().collect::<Vec<_>>();
     let mut params = FunctionParams::default();
 
@@ -40,7 +40,8 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
                 ],
                 vec![
                     {}
-                ]
+                ],
+                std::collections::HashMap::from([{}])
             )
         }}
 
@@ -48,7 +49,8 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
     "###,
         params.function_name.unwrap(),
         params.function_args.unwrap_or("".to_string()),
-        params.function_statements.unwrap_or("".to_string())
+        params.function_statements.unwrap_or("".to_string()),
+        build_contracts(attrs)
     )
     .parse()
     .unwrap();
@@ -77,4 +79,8 @@ fn map_args(body: &proc_macro::Group) -> Option<String> {
 fn map_function_body(params: &mut FunctionParams, body: &proc_macro::Group) {
     let body = map_statements(body);
     params.function_statements = Some(body);
+}
+
+fn build_contracts(attrs: TokenStream) -> String {
+    "".to_owned()
 }
