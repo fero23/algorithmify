@@ -43,6 +43,8 @@ pub(crate) fn define_function_builder(stream: TokenStream) -> TokenStream {
                 ]
             )
         }}
+
+        #[allow(unused_labels)]
     "###,
         params.function_name.unwrap(),
         params.function_args.unwrap_or("".to_string()),

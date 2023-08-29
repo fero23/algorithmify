@@ -9,6 +9,8 @@ use crate::{
 };
 
 pub(crate) fn map_for_loop(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    let tag = try_get_tag(iterator);
+
     iterator.try_get_next_token("for")?;
 
     iterator.try_get_next_token("mut");
@@ -36,12 +38,13 @@ pub(crate) fn map_for_loop(iterator: &mut TokenIterator) -> Option<ExpressionMap
 
     let for_loop = format!(
         "algorithmify::expressions::loops::RangedForLoop {{
+            tag: {},
             statements: vec![{}],
             variable: {},
             start: {},
             end: {}
         }}",
-        statements, variable, start, end
+        tag, statements, variable, start, end
     );
 
     let mapping=  format!(
@@ -66,6 +69,8 @@ fn map_for_loop_boundary_expression(expression: TokenTree) -> Option<String> {
 }
 
 pub(crate) fn map_while_loop(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    let tag = try_get_tag(iterator);
+
     iterator.try_get_next_token("while")?;
 
     let condition = map_expression(iterator)?.mapping;
@@ -78,10 +83,11 @@ pub(crate) fn map_while_loop(iterator: &mut TokenIterator) -> Option<ExpressionM
 
     let while_loop = format!(
         "algorithmify::expressions::loops::WhileLoop {{
+            tag: {},
             statements: vec![{}],
             condition: {},
         }}",
-        statements, condition
+        tag, statements, condition
     );
 
     let mapping=  format!(
@@ -93,4 +99,25 @@ pub(crate) fn map_while_loop(iterator: &mut TokenIterator) -> Option<ExpressionM
         mapping,
         needs_semicolon_unless_final: false,
     })
+}
+
+pub(crate) fn try_get_tag(iterator: &mut TokenIterator) -> String {
+    let index = iterator.index;
+
+    if let (
+        Some(TokenTree::Punct(apostrophe)),
+        Some(TokenTree::Ident(identifier)),
+        Some(TokenTree::Punct(colon)),
+    ) = (
+        iterator.next().cloned(),
+        iterator.next().cloned(),
+        iterator.next(),
+    ) {
+        if apostrophe.as_char() == '\'' && colon.as_char() == ':' {
+            return format!("Some(\"{}\".to_owned())", identifier);
+        }
+    }
+
+    iterator.rewind_to(index);
+    "None".to_owned()
 }

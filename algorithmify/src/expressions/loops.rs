@@ -21,6 +21,7 @@ impl Loop {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WhileLoop {
+    pub tag: Option<String>,
     pub statements: Vec<Statement>,
     pub condition: Expression,
 }
@@ -45,6 +46,7 @@ impl WhileLoop {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RangedForLoop {
+    pub tag: Option<String>,
     pub statements: Vec<Statement>,
     pub variable: Reference,
     pub start: Expression,
