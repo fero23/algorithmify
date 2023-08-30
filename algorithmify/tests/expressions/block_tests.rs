@@ -1,4 +1,4 @@
-use algorithmify::{Expression, Interpreter};
+use algorithmify::Interpreter;
 use algorithmify_macros::define_function_builder;
 
 #[test]
@@ -16,7 +16,7 @@ pub fn test_block() {
     let expression = Interpreter::execute_function(block__function_builder()).unwrap();
 
     assert_eq!(block(), 3);
-    assert_eq!(expression, Expression::Integer(3.into()));
+    assert_eq!(expression, 3.into());
 }
 
 #[test]
@@ -36,5 +36,5 @@ pub fn test_block_scope() {
     let expression = Interpreter::execute_function(block__function_builder()).unwrap();
 
     assert_eq!(block(), 5);
-    assert_eq!(expression, Expression::Integer(5.into()));
+    assert_eq!(expression, 5.into());
 }

@@ -1,4 +1,4 @@
-use algorithmify::{Expression, Interpreter};
+use algorithmify::Interpreter;
 use algorithmify_macros::define_function_builder;
 
 #[test]
@@ -15,7 +15,7 @@ pub fn test_vector() {
     let expression = Interpreter::execute_function(vector__function_builder()).unwrap();
 
     assert_eq!(vector(), 6);
-    assert_eq!(expression, Expression::Integer(6i64.into()));
+    assert_eq!(expression, 6i64.into());
 }
 
 #[test]
@@ -33,7 +33,7 @@ pub fn test_vector_copy() {
     let expression = Interpreter::execute_function(vector_copy__function_builder()).unwrap();
 
     assert_eq!(vector_copy(), 6);
-    assert_eq!(expression, Expression::Integer(6.into()));
+    assert_eq!(expression, 6.into());
 }
 
 #[test]
@@ -52,5 +52,5 @@ pub fn test_function_call() {
     let expression = Interpreter::execute_function(function_call__function_builder()).unwrap();
 
     assert_eq!(function_call(), 5);
-    assert_eq!(expression, Expression::Integer(5.into()));
+    assert_eq!(expression, 5.into());
 }

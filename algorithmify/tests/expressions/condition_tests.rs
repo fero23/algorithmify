@@ -1,4 +1,4 @@
-use algorithmify::{Expression, Interpreter};
+use algorithmify::Interpreter;
 use algorithmify_macros::define_function_builder;
 
 #[test]
@@ -17,7 +17,7 @@ pub fn test_basic_if_condition() {
     let expression = Interpreter::execute_function(if_condition__function_builder()).unwrap();
 
     assert_eq!(if_condition(), 2);
-    assert_eq!(expression, Expression::Integer(2.into()));
+    assert_eq!(expression, 2.into());
 }
 
 #[test]
@@ -38,7 +38,7 @@ pub fn test_if_else_condition() {
     let expression = Interpreter::execute_function(if_else_condition__function_builder()).unwrap();
 
     assert_eq!(if_else_condition(), 3);
-    assert_eq!(expression, Expression::Integer(3.into()));
+    assert_eq!(expression, 3.into());
 }
 
 #[test]
@@ -61,5 +61,5 @@ pub fn test_else_if_condition() {
     let expression = Interpreter::execute_function(else_if_condition__function_builder()).unwrap();
 
     assert_eq!(else_if_condition(), 3);
-    assert_eq!(expression, Expression::Integer(3.into()));
+    assert_eq!(expression, 3.into());
 }

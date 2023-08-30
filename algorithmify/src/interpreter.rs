@@ -19,4 +19,12 @@ impl Interpreter {
         let mut interpreter = Interpreter::new(function.contracts.clone());
         function.execute(&mut interpreter.root_context, vec![])
     }
+
+    pub fn execute_function_with_args(
+        function: Function,
+        expressions: Vec<Expression>,
+    ) -> anyhow::Result<Expression> {
+        let mut interpreter = Interpreter::new(function.contracts.clone());
+        function.execute(&mut interpreter.root_context, expressions)
+    }
 }

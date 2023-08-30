@@ -13,7 +13,7 @@ fn addition_test() {
     let expression = Interpreter::execute_function(addition__function_builder()).unwrap();
 
     assert_eq!(addition(), 3);
-    assert_eq!(expression, Expression::Integer(3.into()));
+    assert_eq!(expression, 3.into());
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn substraction_test() {
     let expression = Interpreter::execute_function(substraction__function_builder()).unwrap();
 
     assert_eq!(substraction(), 4);
-    assert_eq!(expression, Expression::Integer(4.into()));
+    assert_eq!(expression, 4.into());
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn multiplication_test() {
     let expression = Interpreter::execute_function(multiplication__function_builder()).unwrap();
 
     assert_eq!(multiplication(), 6);
-    assert_eq!(expression, Expression::Integer(6.into()));
+    assert_eq!(expression, 6.into());
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn division_test() {
     let expression = Interpreter::execute_function(division__function_builder()).unwrap();
 
     assert_eq!(division(), 3);
-    assert_eq!(expression, Expression::Integer(3.into()));
+    assert_eq!(expression, 3.into());
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn parametherized_expression_test() {
         Interpreter::execute_function(parametherized_expression__function_builder()).unwrap();
 
     assert_eq!(parametherized_expression(), 12);
-    assert_eq!(expression, Expression::Integer(12.into()));
+    assert_eq!(expression, 12.into());
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn operator_precedence_test() {
         Interpreter::execute_function(operator_precedence__function_builder()).unwrap();
 
     assert_eq!(operator_precedence(), 12);
-    assert_eq!(expression, Expression::Integer(12.into()));
+    assert_eq!(expression, 12.into());
 }
 
 #[test]

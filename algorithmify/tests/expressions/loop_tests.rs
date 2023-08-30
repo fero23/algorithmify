@@ -1,4 +1,4 @@
-use algorithmify::{Expression, Interpreter};
+use algorithmify::Interpreter;
 use algorithmify_macros::define_function_builder;
 
 #[test]
@@ -17,7 +17,7 @@ pub fn test_for_loop() {
     let expression = Interpreter::execute_function(for_loop__function_builder()).unwrap();
 
     assert_eq!(for_loop(), 55);
-    assert_eq!(expression, Expression::Integer(55i64.into()));
+    assert_eq!(expression, 55i64.into());
 }
 
 #[test]
@@ -38,7 +38,7 @@ pub fn test_for_loop_variable_bounds() {
     let expression = Interpreter::execute_function(for_loop__function_builder()).unwrap();
 
     assert_eq!(for_loop(), 55);
-    assert_eq!(expression, Expression::Integer(55i64.into()));
+    assert_eq!(expression, 55i64.into());
 }
 
 #[test]
@@ -55,11 +55,10 @@ pub fn test_for_loop_variable_reassignment() {
         i
     }
 
-    let expression: Expression =
-        Interpreter::execute_function(for_loop__function_builder()).unwrap();
+    let expression = Interpreter::execute_function(for_loop__function_builder()).unwrap();
 
     assert_eq!(for_loop(), 1);
-    assert_eq!(expression, Expression::Integer(1.into()));
+    assert_eq!(expression, 1.into());
 }
 
 #[test]
@@ -78,5 +77,5 @@ pub fn test_while_loop() {
     let expression = Interpreter::execute_function(while_loop__function_builder()).unwrap();
 
     assert_eq!(while_loop(), 10);
-    assert_eq!(expression, Expression::Integer(10.into()));
+    assert_eq!(expression, 10.into());
 }

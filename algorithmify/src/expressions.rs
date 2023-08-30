@@ -62,3 +62,32 @@ impl Expression {
         }
     }
 }
+
+impl From<i32> for Expression {
+    fn from(value: i32) -> Self {
+        Expression::Integer(Integer::I32(value))
+    }
+}
+
+impl From<i64> for Expression {
+    fn from(value: i64) -> Self {
+        Expression::Integer(Integer::I64(value))
+    }
+}
+
+impl From<usize> for Expression {
+    fn from(value: usize) -> Self {
+        Expression::Integer(Integer::Usize(value))
+    }
+}
+
+impl<T: Into<Expression>> From<Vec<T>> for Expression {
+    fn from(iterator: Vec<T>) -> Self {
+        let vector = iterator
+            .into_iter()
+            .map(|expression| expression.into())
+            .collect();
+
+        Expression::Vector(vector)
+    }
+}

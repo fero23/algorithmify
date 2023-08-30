@@ -165,21 +165,3 @@ impl BitOr for Integer {
         }
     }
 }
-
-impl From<i32> for Integer {
-    fn from(value: i32) -> Self {
-        Integer::I32(value)
-    }
-}
-
-impl From<i64> for Integer {
-    fn from(value: i64) -> Self {
-        Integer::I64(value)
-    }
-}
-
-impl From<usize> for Integer {
-    fn from(value: usize) -> Self {
-        Integer::Usize(value)
-    }
-}

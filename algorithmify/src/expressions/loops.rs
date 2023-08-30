@@ -146,7 +146,7 @@ impl RangedForLoop {
         for i in start..end {
             context.push_stack();
 
-            context.insert_into_heap(&self.variable, Expression::Integer(i.into()))?;
+            context.insert_into_heap(&self.variable, i.into())?;
             for statement in &self.statements {
                 result = statement.execute(context)?;
             }

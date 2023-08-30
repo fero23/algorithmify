@@ -46,6 +46,7 @@ pub(crate) fn define_function_builder(stream: TokenStream, attrs: TokenStream) -
         }}
 
         #[allow(unused_labels)]
+        #[allow(dead_code)]
     "###,
         params.function_name.unwrap(),
         params.function_args.unwrap_or("".to_string()),
@@ -82,5 +83,54 @@ fn map_function_body(params: &mut FunctionParams, body: &proc_macro::Group) {
 }
 
 fn build_contracts(attrs: TokenStream) -> String {
-    "".to_owned()
+    let mut iterator: TokenIterator = attrs.into_iter().collect::<Vec<_>>().into();
+    let mut contracts = String::new();
+    while let Some(tag) = iterator.next().map(|t| t.to_string()) {
+        iterator
+            .try_get_next_token(":")
+            .expect(&format!("expected a :, got {:?}", iterator.peek()));
+
+        match iterator.next() {
+            Some(TokenTree::Group(group)) if group.delimiter() == Delimiter::Brace => {
+                let inner_iterator = group.stream().into_iter().collect::<Vec<_>>().into();
+                contracts += &build_contract(tag, inner_iterator);
+                contracts += ",";
+            }
+            other => panic!("expected a braced group, got '{:?}'", other),
+        }
+
+        iterator.try_get_next_token(",");
+    }
+
+    contracts
+}
+
+fn build_contract(tag: String, mut iterator: TokenIterator) -> String {
+    let mut conditions = Vec::new();
+
+    while let Some(condition) = iterator.next().map(|t| t.to_string()) {
+        iterator
+            .try_get_next_token(":")
+            .expect(&format!("expected a :, got {:?}", iterator.peek()));
+
+        match iterator.next() {
+            Some(TokenTree::Ident(function)) => {
+                conditions.push(format!(
+                    "{}: Some((\"{}\".to_owned(), {}__function_builder))",
+                    condition, function, function
+                ));
+            }
+            other => panic!("expected a braced group, got '{:?}'", other),
+        }
+
+        iterator.try_get_next_token(",");
+    }
+
+    conditions.push("..Default::default()".to_owned());
+
+    format!(
+        "(\"{}\".to_owned(), algorithmify::expressions::loops::Contract {{{}}})",
+        tag,
+        conditions.join(",")
+    )
 }
