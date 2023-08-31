@@ -36,5 +36,5 @@ pub fn test_insertion_sort() {
     .unwrap();
 
     assert_eq!(insertion_sort(vec![3, 12, 5, 6]), vec![3, 5, 6, 12]);
-    assert_eq!(expression, 3.into());
+    assert_eq!(expression, vec![3usize, 5, 6, 12].into());
 }
