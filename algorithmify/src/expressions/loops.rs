@@ -20,7 +20,9 @@ pub struct Contract {
 impl Contract {
     pub(crate) fn validate_pre_condition(&self, context: &mut Context) -> anyhow::Result<()> {
         if let Some((name, pre_condition)) = self.pre_condition.as_ref() {
-            return match pre_condition().execute(context, Default::default())? {
+            let function = pre_condition();
+            let args = function.extract_args_from_context(context)?;
+            return match pre_condition().execute(context, args)? {
                 Expression::Bool(true) => Ok(()),
                 Expression::Bool(false) => Err(anyhow!("Pre-condition '{}' failed", name)),
                 other => Err(anyhow!(
@@ -39,7 +41,9 @@ impl Contract {
         context: &mut Context,
     ) -> anyhow::Result<()> {
         if let Some((name, maintenance_condition)) = self.maintenance_condition.as_ref() {
-            return match maintenance_condition().execute(context, Default::default())? {
+            let function = maintenance_condition();
+            let args = function.extract_args_from_context(context)?;
+            return match function.execute(context, args)? {
                 Expression::Bool(true) => Ok(()),
                 Expression::Bool(false) => Err(anyhow!("Maintenance condition '{}' failed", name)),
                 other => Err(anyhow!(
@@ -55,7 +59,9 @@ impl Contract {
 
     pub(crate) fn validate_post_condition(&self, context: &mut Context) -> anyhow::Result<()> {
         if let Some((name, post_condition)) = self.post_condition.as_ref() {
-            return match post_condition().execute(context, Default::default())? {
+            let function = post_condition();
+            let args = function.extract_args_from_context(context)?;
+            return match function.execute(context, args)? {
                 Expression::Bool(true) => Ok(()),
                 Expression::Bool(false) => Err(anyhow!("Post-condition '{}' failed", name)),
                 other => Err(anyhow!(

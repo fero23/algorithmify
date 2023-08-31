@@ -1,6 +1,6 @@
+use super::{statements::Statement, Expression, Reference};
 use crate::{interpreter::context::Context, interpreter::context::ContractMap};
-
-use super::{statements::Statement, Expression};
+use anyhow::anyhow;
 
 pub type FunctionBuilder = fn() -> Function;
 pub type FunctionArgs = Vec<String>;
@@ -43,6 +43,24 @@ impl Function {
         context.pop_stack();
 
         Ok(result)
+    }
+
+    pub(crate) fn extract_args_from_context(
+        &self,
+        context: &mut Context,
+    ) -> anyhow::Result<Vec<Expression>> {
+        self.args
+            .iter()
+            .map(|arg| {
+                context
+                    .search_reference(&Reference::Variable(arg.clone()))
+                    .cloned()
+                    .ok_or(anyhow!(
+                        "Cannot extract field '{}' from context. Field not found.",
+                        arg
+                    ))
+            })
+            .collect::<anyhow::Result<Vec<_>>>()
     }
 }
 
