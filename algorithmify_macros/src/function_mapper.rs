@@ -1,7 +1,7 @@
 use proc_macro::{Delimiter, TokenStream, TokenTree};
 
 use crate::{
-    expression_mapper::{map_statements, try_get_identifier},
+    expression_mapper::{map_statements, try_get_identifier, try_get_type},
     token_iterator::TokenIterator,
 };
 
@@ -66,11 +66,18 @@ fn map_args(body: &proc_macro::Group) -> Option<String> {
     let mut iterator: TokenIterator = body.stream().into_iter().collect::<Vec<_>>().into();
 
     let mut args = Vec::new();
+
     while let Some(_) = iterator.peek() {
+        iterator.try_get_next_token("mut");
+
         let arg = try_get_identifier(&mut iterator)?;
+
         iterator.try_get_next_token(":")?;
-        try_get_identifier(&mut iterator)?;
+
+        try_get_type(&mut iterator)?;
+
         args.push(format!("\"{}\".to_owned()", arg));
+
         iterator.try_get_next_token(",");
     }
 

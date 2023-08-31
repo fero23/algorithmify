@@ -68,7 +68,7 @@ impl Context {
         self.stack.pop();
     }
 
-    pub(crate) fn insert_into_heap(
+    pub(crate) fn insert_or_update_in_heap(
         &mut self,
         reference: &Reference,
         expression: Expression,
@@ -93,6 +93,26 @@ impl Context {
                 } else {
                     return Err(anyhow!("{} not found", variable));
                 }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn insert_into_heap(
+        &mut self,
+        reference: &Reference,
+        expression: Expression,
+    ) -> anyhow::Result<()> {
+        match reference {
+            Reference::Variable(variable) => {
+                self.stack
+                    .last_mut()
+                    .unwrap()
+                    .insert(variable.clone(), expression);
+            }
+            _ => {
+                return Err(anyhow!("Cannot insert into {:?}", reference));
             }
         }
 

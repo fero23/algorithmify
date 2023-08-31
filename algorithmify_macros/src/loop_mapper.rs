@@ -1,10 +1,7 @@
 use proc_macro::TokenTree;
 
 use crate::{
-    expression_mapper::{
-        map_expression, map_integer, map_reference, map_reference_expression, map_statements,
-        ExpressionMapping,
-    },
+    expression_mapper::{map_expression, map_reference, map_statements, ExpressionMapping},
     token_iterator::TokenIterator,
 };
 
@@ -23,12 +20,12 @@ pub(crate) fn map_for_loop(iterator: &mut TokenIterator) -> Option<ExpressionMap
 
     iterator.try_get_next_token("in")?;
 
-    let start = map_for_loop_boundary_expression(iterator.next().cloned()?)?;
+    let start = map_expression(iterator)?.mapping;
 
     iterator.try_get_next_token(".")?;
     iterator.try_get_next_token(".")?;
 
-    let end = map_for_loop_boundary_expression(iterator.next().cloned()?)?;
+    let end = map_expression(iterator)?.mapping;
 
     let statements = if let TokenTree::Group(group) = iterator.next()? {
         map_statements(group)
@@ -56,16 +53,6 @@ pub(crate) fn map_for_loop(iterator: &mut TokenIterator) -> Option<ExpressionMap
         mapping,
         needs_semicolon_unless_final: false,
     })
-}
-
-fn map_for_loop_boundary_expression(expression: TokenTree) -> Option<String> {
-    match expression {
-        TokenTree::Ident(reference) => Some(map_reference_expression(&reference)),
-        TokenTree::Literal(literal) if literal.to_string().parse::<i32>().is_ok() => {
-            Some(map_integer(&literal))
-        }
-        _ => None,
-    }
 }
 
 pub(crate) fn map_while_loop(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {

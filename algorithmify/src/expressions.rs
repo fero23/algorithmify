@@ -28,6 +28,7 @@ pub mod statements;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Unit,
+    Break,
     Vector(Vec<Expression>),
     Reference(Reference),
     IndexedAccessExpression(IndexedAccessExpression),

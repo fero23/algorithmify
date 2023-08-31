@@ -14,13 +14,13 @@ impl Statement {
         match self {
             Self::Assignment(reference, expression) => {
                 let result = expression.execute(context)?;
-                context.insert_into_heap(reference, result)?;
+                context.insert_or_update_in_heap(reference, result)?;
                 Ok(Expression::Unit)
             }
             Self::IndexedAssigment(key, value) => match key.to_reference(context) {
                 Ok(Expression::Reference(reference)) => {
                     let result = value.execute(context)?;
-                    context.insert_into_heap(&reference, result)?;
+                    context.insert_or_update_in_heap(&reference, result)?;
                     Ok(Expression::Unit)
                 }
                 Ok(_) => Err(anyhow!("Cannot assign to expression {:?}", key)),

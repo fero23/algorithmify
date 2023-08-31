@@ -100,11 +100,14 @@ impl WhileLoop {
 
         contract.validate_pre_condition(context)?;
 
-        while let Expression::Bool(true) = self.condition.execute(context)? {
+        'main: while let Expression::Bool(true) = self.condition.execute(context)? {
             context.push_stack();
 
             for statement in &self.statements {
                 result = statement.execute(context)?;
+                if result == Expression::Break {
+                    break 'main;
+                }
             }
 
             context.pop_stack();
@@ -147,14 +150,19 @@ impl RangedForLoop {
                 return Err(anyhow!("Invalid range from '{:?}' to '{:?}'", start, end));
             };
 
+        context.insert_into_heap(&self.variable, start.into())?;
         contract.validate_pre_condition(context)?;
 
-        for i in start..end {
+        'main: for i in start..end {
+            context.insert_or_update_in_heap(&self.variable, i.into())?;
+
             context.push_stack();
 
-            context.insert_into_heap(&self.variable, i.into())?;
             for statement in &self.statements {
                 result = statement.execute(context)?;
+                if result == Expression::Break {
+                    break 'main;
+                }
             }
 
             context.pop_stack();
@@ -163,12 +171,13 @@ impl RangedForLoop {
         }
 
         if let Some(previous_variable_value) = previous_variable_value {
-            context.insert_into_heap(&self.variable, previous_variable_value)?;
+            context.insert_or_update_in_heap(&self.variable, previous_variable_value)?;
         }
 
-        context.pop_stack();
-
+        context.insert_or_update_in_heap(&self.variable, end.into())?;
         contract.validate_post_condition(context)?;
+
+        context.pop_stack();
 
         Ok(result)
     }

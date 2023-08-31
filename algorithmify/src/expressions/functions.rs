@@ -7,6 +7,7 @@ pub type FunctionArgs = Vec<String>;
 pub type FunctionParams = Vec<Expression>;
 pub type FunctionArgParamPair = (String, Expression);
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Function {
     pub(crate) args: FunctionArgs,
     pub(crate) statements: Vec<Statement>,
