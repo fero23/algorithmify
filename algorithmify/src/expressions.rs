@@ -7,6 +7,7 @@ pub use self::{
     functions::{Function, FunctionBuilder, FunctionCall, FunctionParams},
     integer::Integer,
     loops::Loop,
+    method_call::MethodCall,
     operation::Operation,
     reference::IndexedAccessExpression,
     reference::Reference,
@@ -19,6 +20,7 @@ pub mod float;
 pub mod functions;
 pub mod integer;
 pub mod loops;
+pub mod method_call;
 pub mod operation;
 pub mod reference;
 pub mod statements;
@@ -39,6 +41,7 @@ pub enum Expression {
     Loop(Box<Loop>),
     FunctionCall(FunctionCall),
     Block(Box<Block>),
+    MethodCall(MethodCall),
 }
 
 impl Expression {
@@ -51,6 +54,7 @@ impl Expression {
             Self::Condition(condition) => condition.execute(context),
             Self::Block(block) => block.execute(context),
             Self::FunctionCall(function_call) => function_call.execute(context),
+            Self::MethodCall(method_call) => method_call.execute(context),
             _ => Ok(self.clone()),
         }
     }

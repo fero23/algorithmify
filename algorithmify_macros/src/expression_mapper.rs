@@ -229,21 +229,40 @@ fn map_vec_sequence(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
     })
 }
 
+fn map_method_call(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    let expression = map_chainable_expressions(iterator)?;
+
+    iterator.try_get_next_token(".")?;
+
+    let method = try_get_identifier(iterator)?;
+
+    match iterator.next()? {
+        TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
+            let args = map_comma_separated_expressions(group)?;
+
+            let mapping = format!(
+                "algorithmify::expressions::Expression::MethodCall(algorithmify::expressions::MethodCall{{
+                    expression: Box::new({}),
+                    method: \"{}\".to_owned(),
+                    args: vec![{}]
+                }})",
+                expression.mapping, method, args
+            );
+
+            Some(ExpressionMapping {
+                mapping,
+                needs_semicolon_unless_final: true,
+            })
+        }
+        _ => None,
+    }
+}
+
 fn map_function_call(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
     let identifier = try_get_identifier(iterator)?;
     match iterator.next()? {
         TokenTree::Group(group) if group.delimiter() == Delimiter::Parenthesis => {
-            let mut args_iterator: TokenIterator =
-                group.stream().into_iter().collect::<Vec<_>>().into();
-
-            let mut expressions = String::new();
-
-            while let Some(expression) = map_expression(&mut args_iterator) {
-                expressions += &expression.mapping;
-                expressions += ",";
-
-                args_iterator.try_get_next_token(",");
-            }
+            let expressions = map_comma_separated_expressions(group)?;
 
             let mapping = format!(
                 "algorithmify::expressions::Expression::FunctionCall(algorithmify::expressions::FunctionCall{{
@@ -293,7 +312,7 @@ fn map_vec_shorthand(iterator: &mut TokenIterator) -> Option<ExpressionMapping> 
     }
 }
 
-pub(crate) fn map_expression(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+pub(crate) fn map_chainable_expressions(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
     alt(
         iterator,
         &[
@@ -307,6 +326,10 @@ pub(crate) fn map_expression(iterator: &mut TokenIterator) -> Option<ExpressionM
             map_simple_expression,
         ],
     )
+}
+
+pub(crate) fn map_expression(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
+    alt(iterator, &[map_method_call, map_chainable_expressions])
 }
 
 pub(crate) fn map_block(iterator: &mut TokenIterator) -> Option<ExpressionMapping> {
@@ -509,4 +532,23 @@ pub(crate) fn map_indexed_reference(reference: &proc_macro::Ident, index: String
         }}",
         reference, index
     )
+}
+
+pub(crate) fn map_comma_separated_expressions(group: &proc_macro::Group) -> Option<String> {
+    let mut iterator: TokenIterator = group.stream().into_iter().collect::<Vec<_>>().into();
+
+    let mut expressions = String::new();
+
+    while let Some(expression) = map_expression(&mut iterator) {
+        expressions += &expression.mapping;
+        expressions += ",";
+
+        iterator.try_get_next_token(",");
+    }
+
+    if iterator.next().is_none() {
+        Some(expressions)
+    } else {
+        None
+    }
 }

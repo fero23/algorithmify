@@ -54,3 +54,17 @@ pub fn test_function_call() {
     assert_eq!(function_call(), 5);
     assert_eq!(expression, 5.into());
 }
+
+#[test]
+pub fn test_method_call() {
+    #[define_function_builder]
+    fn method_call() -> usize {
+        let vec = vec![1, 2, 3];
+        vec.len()
+    }
+
+    let expression = Interpreter::execute_function(method_call__function_builder()).unwrap();
+
+    assert_eq!(method_call(), 3);
+    assert_eq!(expression, 3usize.into());
+}
