@@ -1,5 +1,6 @@
 [package]
 name = "algorithmify_macros"
+description = "Macros for the algorithmify library"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
