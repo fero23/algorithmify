@@ -1,10 +1,24 @@
 # Algorithmify
 
+[![Build Status]][actions] [![Latest Version]][crates.io] [![algorithmify: rustc 1.56+]][Rust 1.56] [![algorithmify_macros: rustc 1.56+]][Rust 1.56]
+
+[Build Status]: https://img.shields.io/github/actions/workflow/status/fero23/algorithmify/rust.yml?branch=master
+[actions]: https://github.com/fero23/algorithmify/actions?query=branch%3Amaster
+[Latest Version]: https://img.shields.io/crates/v/algorithmify.svg
+[crates.io]: https://crates.io/crates/algorithmify
+[algorithmify: rustc 1.56+]: https://img.shields.io/badge/algorithmify-1.56+-lightgray.svg
+[algorithmify_macros: rustc 1.56+]: https://img.shields.io/badge/algorithmify_macros-1.56+-lightgray.svg
+[Rust 1.56]: https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html
+
 This is the main repository for the `algorithmify` experimental library. This library is designed to create specifications for algorithms defined using Rust code.
 
 `algorithmify` is a platform that contains a token parser contained in the `algorithmify_macros` crate. This crate leverages the power of the Rust macro system to define and expose the `define_function_builder` macro that transforms a Rust function into a structural representation (or executable Abstract Syntax Tree) of the function. Such representation can can be executed by the `Interpreter` that lives inside the `algorithmify` crate.
 
 As for right now the `define_function_builder` macro only supports a very basic subset of the Rust syntax. That should be enough to define and test many basic algorithms that can be expressed in `C`-like pseudocode and its equivalent Rust implementation. In the future the plan is to add the calculation of the algorithm complexity and other algorithm stats.
+
+## Installation
+
+Use `cargo add algorithmify` (for the AST and interpreter) and `cargo add algorithmify_macros` (for the `define_function_builder` macro) to use `algorithmify` on your project.
 
 ## Function builders
 
@@ -167,3 +181,7 @@ pub fn test_insertion_sort() {
 ```
 
 The test we have at the end verifies that the end results are the same, but the three `condition` functions we declare as part of the contract are also executed and check the correct state of the algorithm during its execution.
+
+## Reference implementations
+
+The `algorithmify/test/algorithms` directory is where reference implmentations of many common algorithms will live. These implementation will all have contracts that verify the correctness of the algorithms.
